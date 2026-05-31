@@ -92,6 +92,24 @@ history timeline. **No stored status** — urgency is derived at render time (se
 | `ExpiresAtSnapshot` | DATETIME NULL | the expiry an alert fired against — a changed value = new cycle = alerts fire fresh after renewal |
 | `SentAt` | DATETIME | UTC |
 
+### `MonitorRun` — one row per scheduled/CLI scan run
+
+Operational log so you can confirm the scheduler is firing and see what each run
+did. Written only by `console monitor:run` (see `scheduling.md`); nothing in the
+web app reads it (yet). Not tied to a target — no foreign key, pure append-only.
+
+| Column | Type | Notes |
+|---|---|---|
+| `PK_MonitorRunID` | INT UNSIGNED PK AI | |
+| `StartedAt` | DATETIME | UTC, when the run began |
+| `Mode` | VARCHAR(10) | `due` (interval-filtered) or `full` (all active) |
+| `DueCount` | SMALLINT UNSIGNED NULL | targets selected as due in `--due` mode; **NULL** for a `full` run |
+| `CheckedCount` / `OkCount` / `FailedCount` | SMALLINT UNSIGNED | targets actually checked, and the ok/fail split |
+| `DurationMs` | INT UNSIGNED | wall-clock of the run |
+
+A "nothing due" run is still recorded (`CheckedCount = 0`) — its presence is the
+proof the run happened. Index on `StartedAt` for "recent runs" reads.
+
 ## Starter tables (inherited, not certy-specific)
 
 `User`, `PasswordReset`, `LoginAttempt`, `EmailVerification`, `RememberToken`,

@@ -35,7 +35,8 @@ namespaces, no framework). See `architecture.md`.
   Generates data via one path (`MonitorService`). SSL + domain checkers both work.
 - **Scheduled scanning**: `php console monitor:run [--due]` runs checks unattended
   on a timer (Task Scheduler / cron), `--due` honouring `scan_interval_minutes`.
-  Same data path as manual scans; no alerts yet. See `scheduling.md`.
+  Same data path as manual scans; no alerts yet. Each run is recorded to
+  `MonitorRun`. See `scheduling.md`.
 - **Dashboard**: colour-coded status table + KPI tally, result/host filters.
 - **Scans list**: flat, read-only history of every check, result/host filters.
 - **Per-target history**: timeline of a target's past checks.

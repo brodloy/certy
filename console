@@ -109,7 +109,17 @@ function monitorRun(array $flags = []): void
     //   monitor:run         force-check EVERY active target (manual/full run)
     //   monitor:run --due   check only targets not checked within
     //                       config('scan_interval_minutes') — the cron-friendly mode
-    if (in_array('--due', $flags, true)) {
+    //
+    // Every invocation records one MonitorRun row (incl. a "nothing due" run), so
+    // you can confirm the scheduler is firing and see what each run did.
+    $startedAt = gmdate('Y-m-d H:i:s');
+    $t0        = microtime(true);
+
+    $due      = in_array('--due', $flags, true);
+    $mode     = $due ? 'due' : 'full';
+    $dueCount = null; // stays null for a full run (no "due" selection happened)
+
+    if ($due) {
         $intervalMin = max(1, (int) config('scan_interval_minutes', 720));
         $cutoff = gmdate('Y-m-d H:i:s', time() - $intervalMin * 60);
 
@@ -122,14 +132,16 @@ function monitorRun(array $flags = []): void
            ORDER BY `PK_MonitoredTargetID`',
             [$cutoff],
         );
-        $ids = array_map(static fn(array $r): int => (int) $r['PK_MonitoredTargetID'], $rows);
+        $ids      = array_map(static fn(array $r): int => (int) $r['PK_MonitoredTargetID'], $rows);
+        $dueCount = count($ids);
 
         if ($ids === []) {
             echo "Due run (interval {$intervalMin}m): nothing due — all active targets are fresh." . PHP_EOL;
-            return;
+            $results = [];
+        } else {
+            echo "Due run (interval {$intervalMin}m): {$dueCount} target(s) due." . PHP_EOL;
+            $results = (new MonitorService())->runChecks($ids);
         }
-        echo "Due run (interval {$intervalMin}m): " . count($ids) . " target(s) due." . PHP_EOL;
-        $results = (new MonitorService())->runChecks($ids);
     } else {
         $results = (new MonitorService())->runChecks();
     }
@@ -142,6 +154,16 @@ function monitorRun(array $flags = []): void
         }
     }
     $failed = $total - $ok;
+
+    db()->insert('MonitorRun', [
+        'StartedAt'    => $startedAt,
+        'Mode'         => $mode,
+        'DueCount'     => $dueCount,
+        'CheckedCount' => $total,
+        'OkCount'      => $ok,
+        'FailedCount'  => $failed,
+        'DurationMs'   => (int) round((microtime(true) - $t0) * 1000),
+    ]);
 
     echo "Checked {$total} target(s): {$ok} ok, {$failed} failed." . PHP_EOL;
 }

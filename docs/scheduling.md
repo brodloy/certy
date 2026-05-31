@@ -111,11 +111,18 @@ Use the path to a PHP CLI binary that has `openssl` (on Linux it's standard).
   even though the code is correct — the SSL checks (port 443) are unaffected. If
   scheduled domain checks fail but manual ones from another network succeed,
   suspect a port-43 block on the scheduler's host.
-- **Visibility.** Today the only record a run leaves is the new `CheckResult` rows
-  plus its stdout summary. Redirect that summary to a file if you want a log —
-  e.g. append `>> C:\MAMP\htdocs\certy\storage\logs\monitor.log 2>&1` to the
-  Linux/cron form, or set the Task Scheduler action to a wrapper `.cmd` that
-  redirects. A first-class run log/table is the optional Phase 4.
+- **Visibility.** Every `monitor:run` records one row in the **`MonitorRun`** table
+  (`StartedAt`, `Mode`, `DueCount`, `CheckedCount`, `OkCount`, `FailedCount`,
+  `DurationMs`) — including "nothing due" runs, so the row's mere presence proves
+  the scheduler fired. Check the most recent runs with:
+
+  ```sql
+  SELECT * FROM `MonitorRun` ORDER BY `PK_MonitorRunID` DESC LIMIT 20;
+  ```
+
+  The stdout summary is still emitted too; redirect it to a file if you also want a
+  plain-text trail (e.g. append `>> storage/logs/monitor.log 2>&1` to the cron line,
+  or point the Task Scheduler action at a wrapper `.cmd` that redirects).
 
 ## Verifying it works
 

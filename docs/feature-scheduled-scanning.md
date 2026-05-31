@@ -77,23 +77,28 @@ checks on a timer and records results.
 - [x] Update `docs/architecture.md` CLI section with `monitor:run [--due]` and the
       openssl note.
 
-### Phase 4 (optional) — run visibility  ☐
-- [ ] Lightweight record of scheduled runs (count, duration, when) — either a log
-      line to `storage/logs/` or a small table — so the user can confirm the
-      scheduler is firing. Decide log-vs-table before building.
+### Phase 4 (optional) — run visibility  ☑
+- [x] **Decision: DB table** (`MonitorRun`), not a log line — queryable history a
+      future dashboard page could surface. Migration `015_create_monitor_run.sql`.
+- [x] `monitorRun()` records one row per run (`StartedAt`, `Mode`, `DueCount`,
+      `CheckedCount`, `OkCount`, `FailedCount`, `DurationMs`), incl. "nothing due"
+      runs (`CheckedCount = 0`) as proof the run fired. Documented in
+      `database.md` + `scheduling.md`.
+- [x] Lint; verified on MAMP — three runs produced correct rows: nothing-due
+      (due 0 / checked 0), due (due 1 / checked 1), full (DueCount NULL / checked 3).
 
 ## Current status
 
-**Phases 1–3 done.** Core feature complete: `monitor:run [--due]` works and is
-documented for unattended use. Only the **optional** Phase 4 (run visibility)
-remains, if wanted.
+**Feature complete — all phases done.** `monitor:run [--due]` runs unattended,
+is documented (`scheduling.md`), and records each run to `MonitorRun`. Email
+alerts are the natural next feature and hang off this trigger (separate doc).
 
 | Phase | State |
 |---|---|
 | 1 — monitor:run (all active) | ☑ done, verified on MAMP |
 | 2 — --due filtering | ☑ done, verified on MAMP |
 | 3 — scheduler setup + docs | ☑ done (docs only; no task registered) |
-| 4 — run visibility (optional) | ☐ not started |
+| 4 — run visibility (optional) | ☑ done, verified on MAMP |
 
 ## Decisions log
 - **Phase 1 is a thin wrapper.** `MonitorService::runChecks(null)` already loads
@@ -120,3 +125,8 @@ remains, if wanted.
 - **Interval default = 720 min (12h).** Cert/domain expiry moves slowly; a 12h
   due-window means a scheduler firing hourly checks each target ~twice a day.
   Tunable per machine via `scan_interval_minutes` in `config.php`.
+- **Phase 4: table over log line.** Chose a `MonitorRun` table rather than a
+  `storage/logs/` line so run history is queryable and a future dashboard page can
+  surface it (fits the DB-driven house style). The command still prints its stdout
+  summary, which can additionally be redirected to a file if a text trail is wanted.
+  The insert covers every path, so a "nothing due" run is recorded too.
