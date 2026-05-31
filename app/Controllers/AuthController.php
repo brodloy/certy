@@ -31,7 +31,7 @@ class AuthController
             if (input('remember') !== '') {
                 auth()->remember((int) current_user()['PK_UserID']);
             }
-            return redirect('/dashboard');
+            return redirect(is_admin() ? '/admin' : '/dashboard');
         }
 
         remember_old(['email' => $email]);

@@ -358,7 +358,7 @@ code { color: var(--accent-text); background: var(--accent-soft);
     backdrop-filter: saturate(180%) blur(12px);
     position: sticky; top: 0; z-index: 50;
 }
-.app-content { padding: 2rem; max-width: 1040px; width: 100%; }
+.app-content { padding: 2rem; width: 100%; }
 
 /* ---- Auth card ----------------------------------------------------------- */
 .auth-wrap {
@@ -450,13 +450,28 @@ code { color: var(--accent-text); background: var(--accent-soft);
     border-bottom: 1px solid var(--border);
     padding: 0.75rem 1rem;
 }
-.table tbody td { padding: 0.85rem 1rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.table tbody td { padding: 1rem 0.9rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
 .table tbody tr:last-child td { border-bottom: 0; }
 .table tbody tr { transition: background 0.12s ease; }
 .table tbody tr:hover { background: var(--bg-tint); }
 .table .host { font-family: var(--font-mono); font-weight: 500; color: var(--text); }
 .table .days-left { font-family: var(--font-mono); font-weight: 600; }
 .favicon { border-radius: 3px; flex: none; }
+
+/* Compact square icon buttons (per-row actions: scan / edit / delete) */
+.btn-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; padding: 0;
+    border: 1px solid var(--border-strong); border-radius: var(--radius);
+    background: var(--bg); color: var(--text-muted);
+    cursor: pointer; transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
+}
+.btn-icon:hover { background: var(--bg-tint); color: var(--text); border-color: var(--accent); text-decoration: none; }
+.btn-icon svg { width: 16px; height: 16px; }
+.btn-icon[disabled] { opacity: 0.55; cursor: default; }
+.btn-icon-danger:hover { color: var(--danger); border-color: var(--danger); }
+.btn-icon.is-busy svg { animation: cy-spin 0.7s linear infinite; }
+@keyframes cy-spin { to { transform: rotate(360deg); } }
 
 /* Wrap a table in .table-card for a framed, elevated look. Tables that are
    wider than the card scroll horizontally inside it (rather than clipping). */
@@ -467,6 +482,13 @@ code { color: var(--accent-text); background: var(--accent-soft);
 .table-card .table td, .table-card .table th { white-space: nowrap; }
 /* let the detail/long columns wrap instead of forcing the table ever-wider */
 .table-card .table td.wrap, .table-card .table th.wrap { white-space: normal; }
+
+/* The host column is the elastic one: it may wrap so the table can shrink to
+   fit its container instead of forcing a horizontal scrollbar. */
+.table-card .table td.col-host, .table-card .table th.col-host { white-space: normal; min-width: 150px; }
+/* As the viewport narrows, drop the least-critical columns rather than scroll. */
+@media (max-width: 1180px) { .col-checked { display: none; } }
+@media (max-width: 940px)  { .col-type    { display: none; } }
 
 .list-row {
     display: flex; align-items: center; justify-content: space-between;

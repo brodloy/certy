@@ -46,10 +46,11 @@ Password reset and email verification need no mail setup locally — the message
 - Email/password auth — argon2id hashing, rate-limited, remember-me, email
   verification, and password reset
 - Optional Google & GitHub sign-in (off by default)
-- Per-user targets capped at 10, with an active/paused toggle
-- Colour-coded dashboard with a KPI tally
+- Per-user targets capped at 10, with an active/paused toggle, all managed from
+  the dashboard
+- Colour-coded dashboard with a KPI tally and per-row Scan / Edit / Delete
 - On-demand **Scan** and **Scan all** (live, no page reload)
-- Flat scans history plus a per-target timeline
+- Per-target history timeline (click a host)
 - **Scheduled scanning** via `php console monitor:run --due` (Task Scheduler / cron)
 - Strict per-user isolation — each user only ever sees their own targets
 

@@ -67,8 +67,12 @@ document.addEventListener('submit', function (event) {
     function setBusy(btn, busy) {
         if (!btn) return;
         btn.disabled = busy;
-        if (busy) { btn.dataset.label = btn.textContent; btn.textContent = 'Checking…'; }
-        else if (btn.dataset.label) { btn.textContent = btn.dataset.label; }
+        btn.classList.toggle('is-busy', busy);
+        // Icon buttons show busy via a CSS spin (keep their glyph); text buttons
+        // swap their label to "Checking…" and back.
+        if (btn.hasAttribute('data-icon')) return;
+        if (busy) { btn.dataset.label = btn.innerHTML; btn.textContent = 'Checking…'; }
+        else if (btn.dataset.label) { btn.innerHTML = btn.dataset.label; }
     }
 
     var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -91,7 +95,7 @@ document.addEventListener('submit', function (event) {
         if (days) {
             days.style.color = cssVar;
             days.innerHTML = (res.days_left === null || res.days_left === undefined)
-                ? '<span class="text-faint">—</span>' : (res.days_left + ' days');
+                ? '<span class="text-faint">not checked</span>' : (res.days_left + ' days left');
         }
         if (exp)  { exp.textContent = res.expires_at ? fmtDate(res.expires_at) : '—'; }
         if (chk)  { chk.textContent = 'just now'; }

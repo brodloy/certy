@@ -3,6 +3,10 @@
  * DASHBOARD — colour-coded overview of the user's monitored targets.
  * @var array $user @var array $rows @var array $tally @var int $count @var int $max
  */
+// Small inline icon (stroke = currentColor) for the per-row action buttons.
+$ico = fn (string $body): string =>
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"'
+    . ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $body . '</svg>';
 ?>
 <div class="d-flex align-items-center justify-content-between mb-4">
     <div>
@@ -55,8 +59,8 @@
     <div class="table-card">
         <table class="table" id="monitorTable">
             <thead><tr>
-                <th>Host</th><th>Type</th><th>Expires</th><th>Days left</th>
-                <th>Last checked</th><th>Status</th><th></th>
+                <th class="col-host">Host</th><th class="col-type">Type</th><th>Expires</th>
+                <th class="col-checked">Last checked</th><th>Status</th><th></th>
             </tr></thead>
             <tbody>
             <?php foreach ($rows as $r):
@@ -67,7 +71,7 @@
                 $id      = (int) $r['PK_MonitoredTargetID'];
             ?>
                 <tr data-row="<?= e((string) $id) ?>">
-                    <td>
+                    <td class="col-host">
                         <a class="host d-inline-flex align-items-center gap-2" href="<?= e(url('/targets/' . $id)) ?>">
                             <?= favicon_img($r['Host']) ?><?= e($r['Host']) ?>
                         </a>
@@ -75,15 +79,25 @@
                             <div class="text-faint" style="font-size:.78rem;"><?= e($r['Label']) ?></div>
                         <?php endif; ?>
                     </td>
-                    <td><span class="badge-soft"><?= e($r['TypeCode']) ?></span></td>
-                    <td data-cell="expires"><?= $r['LastExpiresAt'] ? e(format_date($r['LastExpiresAt'], 'M j, Y')) : '<span class="text-faint">—</span>' ?></td>
-                    <td class="days-left" data-cell="days" style="color:var(--<?= e($colour) ?>)"><?= $days === null ? '<span class="text-faint">—</span>' : e((string) $days) . ' days' ?></td>
-                    <td class="text-faint" data-cell="checked" style="font-family:var(--font-mono);font-size:.78rem;">
+                    <td class="col-type"><span class="badge-soft"><?= e($r['TypeCode']) ?></span></td>
+                    <td>
+                        <div data-cell="expires"><?= $r['LastExpiresAt'] ? e(format_date($r['LastExpiresAt'], 'M j, Y')) : '<span class="text-faint">—</span>' ?></div>
+                        <div class="days-left" data-cell="days" style="font-size:.8rem;color:var(--<?= e($colour) ?>)"><?= $days === null ? '<span class="text-faint">not checked</span>' : e((string) $days) . ' days left' ?></div>
+                    </td>
+                    <td class="col-checked text-faint" data-cell="checked" style="font-family:var(--font-mono);font-size:.78rem;">
                         <?= $r['LastCheckedAt'] ? e(format_date($r['LastCheckedAt'], 'M j, g:i A')) : 'never' ?>
                     </td>
                     <td data-cell="status"><?= status_badge($status) ?></td>
                     <td class="text-end">
-                        <button class="btn btn-outline-secondary btn-sm" data-check="<?= e((string) $id) ?>">Scan</button>
+                        <div class="d-inline-flex align-items-center gap-2">
+                            <button class="btn-icon" type="button" data-check="<?= e((string) $id) ?>" data-icon title="Scan now" aria-label="Scan now"><?= $ico('<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>') ?></button>
+                            <a class="btn-icon" href="<?= e(url('/targets/' . $id . '/edit')) ?>" title="Edit" aria-label="Edit"><?= $ico('<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>') ?></a>
+                            <form method="post" action="<?= e(url('/targets/' . $id . '/delete')) ?>"
+                                  onsubmit="return confirm('Delete this target and its history?');">
+                                <?= csrf_field() ?>
+                                <button class="btn-icon btn-icon-danger" type="submit" title="Delete" aria-label="Delete"><?= $ico('<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>') ?></button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
             <?php endforeach; ?>

@@ -314,7 +314,7 @@ function is_verified(): bool
 
 /**
  * Render simple "‹ 1 2 3 ›" pagination links. $meta is what db()->paginate()
- * returns. $baseUrl is the path without ?page (e.g. '/scans').
+ * returns. $baseUrl is the path without ?page (e.g. '/admin/users').
  */
 function pagination_links(array $meta, string $baseUrl, array $query = []): string
 {

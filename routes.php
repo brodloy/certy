@@ -44,9 +44,9 @@ $router->get('/dashboard',       [DashboardController::class, 'index']);
 $router->get('/favicon',         [FaviconController::class, 'show']);
 
 // --- Targets (the monitored hosts/domains) ---------------------------------
-// NOTE: declare literal '/targets/check' and '/targets/create' BEFORE
-// '/targets/{id}', or the {id} pattern would swallow those words.
-$router->get('/targets',              [TargetController::class, 'index']);
+// The list of targets lives on the dashboard; these are the add/edit/detail/
+// scan actions. NOTE: declare literal '/targets/check' and '/targets/create'
+// BEFORE '/targets/{id}', or the {id} pattern would swallow those words.
 $router->get('/targets/create',       [TargetController::class, 'create']);
 $router->post('/targets/check',       [TargetController::class, 'check']);
 $router->post('/targets',             [TargetController::class, 'store']);
@@ -54,9 +54,6 @@ $router->get('/targets/{id}',         [TargetController::class, 'show']);
 $router->get('/targets/{id}/edit',    [TargetController::class, 'edit']);
 $router->post('/targets/{id}',        [TargetController::class, 'update']);
 $router->post('/targets/{id}/delete', [TargetController::class, 'destroy']);
-
-// --- Scans (read-only list of generated scan results) ----------------------
-$router->get('/scans',                [ScanController::class, 'index']);
 
 // --- Account settings ------------------------------------------------------
 $router->get('/settings',           [SettingsController::class, 'show']);
@@ -66,4 +63,5 @@ $router->post('/settings/disconnect', [SettingsController::class, 'disconnect'])
 $router->post('/settings/delete',     [SettingsController::class, 'deleteAccount']);
 
 // --- Admin (admin role only) -----------------------------------------------
+$router->get('/admin',           [AdminController::class, 'index']);
 $router->get('/admin/users',     [AdminController::class, 'users']);

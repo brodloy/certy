@@ -15,7 +15,7 @@ $active = $editing ? ((int) $target['IsActive'] === 1) : true;
 
 $action = $editing ? url('/targets/' . $tid) : url('/targets');
 ?>
-<div class="mb-3"><a class="text-muted-2" href="<?= e(url('/targets')) ?>">&larr; Back to targets</a></div>
+<div class="mb-3"><a class="text-muted-2" href="<?= e(url('/dashboard')) ?>">&larr; Back to dashboard</a></div>
 <h1 class="mb-4"><?= $editing ? 'Edit target' : 'Add a target' ?></h1>
 
 <div class="card" style="max-width:620px;"><div class="card-body">
@@ -54,7 +54,7 @@ $action = $editing ? url('/targets/' . $tid) : url('/targets');
         <?php endif; ?>
         <div class="d-flex gap-2">
             <button class="btn btn-primary" type="submit"><?= $editing ? 'Save changes' : 'Add target' ?></button>
-            <a class="btn btn-outline-secondary" href="<?= e(url('/targets')) ?>">Cancel</a>
+            <a class="btn btn-outline-secondary" href="<?= e(url('/dashboard')) ?>">Cancel</a>
         </div>
     </form>
 </div></div>

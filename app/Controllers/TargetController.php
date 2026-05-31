@@ -12,60 +12,13 @@ class TargetController
 {
     private const MAX_TARGETS = 10;
 
-    /** GET /targets — this user's targets, newest first, filterable. */
-    public function index(): string
-    {
-        require_login();
-        $uid = current_user()['PK_UserID'];
-
-        $fResult = in_array(input('result'), ['ok', 'failed'], true) ? input('result') : '';
-        $fHost   = trim(input('host'));
-
-        $all = db()->all(
-            'SELECT t.*, lt.`Code` AS `TypeCode`, lt.`Label` AS `TypeLabel`
-               FROM `MonitoredTarget` t
-               JOIN `LK_TargetType` lt ON lt.`PK_TargetTypeID` = t.`FK_TargetTypeID`
-              WHERE t.`FK_UserID` = ?
-              ORDER BY t.`CreatedAt` DESC',
-            [$uid],
-        );
-
-        $hosts = [];
-        foreach ($all as $r) {
-            $hosts[$r['Host']] = true;
-        }
-
-        $rows = array_values(array_filter($all, function ($r) use ($fResult, $fHost) {
-            if ($fHost !== '' && $r['Host'] !== $fHost) {
-                return false;
-            }
-            if ($fResult === 'ok'     && ($r['LastIsOk'] === null || (int) $r['LastIsOk'] !== 1)) {
-                return false;
-            }
-            if ($fResult === 'failed' && (int) ($r['LastIsOk'] ?? -1) !== 0) {
-                return false;
-            }
-            return true;
-        }));
-
-        return view('targets/index', [
-            'title'   => 'Targets',
-            'rows'    => $rows,
-            'count'   => count($all),
-            'max'     => self::MAX_TARGETS,
-            'hosts'   => array_keys($hosts),
-            'fResult' => $fResult,
-            'fHost'   => $fHost,
-        ], 'app');
-    }
-
     /** GET /targets/create — the add form. */
     public function create(): string
     {
         require_login();
 
         if ($this->targetCount() >= self::MAX_TARGETS) {
-            return redirect_with('/targets', 'error',
+            return redirect_with('/dashboard', 'error',
                 'You have reached the limit of ' . self::MAX_TARGETS . ' targets.');
         }
 
@@ -78,7 +31,7 @@ class TargetController
         require_login();
 
         if ($this->targetCount() >= self::MAX_TARGETS) {
-            return redirect_with('/targets', 'error',
+            return redirect_with('/dashboard', 'error',
                 'You have reached the limit of ' . self::MAX_TARGETS . ' targets.');
         }
 
@@ -126,7 +79,7 @@ class TargetController
             'UpdatedAt'       => $now,
         ]);
 
-        return redirect_with('/targets', 'success', 'Target added. Run a check to see its status.');
+        return redirect_with('/dashboard', 'success', 'Target added. Run a check to see its status.');
     }
 
     /** GET /targets/{id}/edit — the edit form for an owned target. */
@@ -198,7 +151,7 @@ class TargetController
 
         db()->run($sql, $params);
 
-        return redirect_with('/targets', 'success', 'Target updated.');
+        return redirect_with('/dashboard', 'success', 'Target updated.');
     }
 
     /** GET /targets/{id} — per-target history view (ownership checked). */
@@ -231,7 +184,7 @@ class TargetController
             [$target['PK_MonitoredTargetID'], current_user()['PK_UserID']],
         );
 
-        return redirect_with('/targets', 'success', 'Target deleted.');
+        return redirect_with('/dashboard', 'success', 'Target deleted.');
     }
 
     /**

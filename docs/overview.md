@@ -31,17 +31,22 @@ namespaces, no framework). See `architecture.md`.
   password reset) — inherited from the starter.
 - Optional **Google and GitHub** sign-in (off by default; enable in `config.php`).
 - **Targets**: add / edit / delete, per-user, capped at 10. Active/paused toggle.
+  Managed directly from the dashboard (no separate list page).
 - **Scanning**: on-demand "Scan" (one target) and "Scan all" — live, no reload.
   Generates data via one path (`MonitorService`). SSL + domain checkers both work.
 - **Scheduled scanning**: `php console monitor:run [--due]` runs checks unattended
   on a timer (Task Scheduler / cron), `--due` honouring `scan_interval_minutes`.
   Same data path as manual scans; no alerts yet. Each run is recorded to
   `MonitorRun`. See `scheduling.md`.
-- **Dashboard**: colour-coded status table + KPI tally, result/host filters.
-- **Scans list**: flat, read-only history of every check, result/host filters.
-- **Per-target history**: timeline of a target's past checks.
+- **Dashboard**: the home page — colour-coded status table + KPI tally, with
+  per-row Scan / Edit / Delete and result/host filters. The single list of targets.
+- **Per-target history**: click a host for the timeline of its past checks.
 - **Settings**: profile, password (incl. set-password for OAuth-only users),
   connected accounts (link/unlink Google/GitHub), delete account.
+- **Admin** (admin role only): a system-wide overview at `/admin` — user/target
+  totals, system health tally, and scanner activity (last scheduled + manual
+  `monitor:run`, recent run history) — plus the user list at `/admin/users`.
+  Admins land here instead of the user dashboard.
 
 **Deferred (not built yet):**
 - **Email alerts** — `AlertDispatcher` + tiered thresholds (30/14/7/1 days) with

@@ -1,10 +1,10 @@
 <?php
 /**
  * Filter bar — result + host dropdowns that submit via GET, so filters live in
- * the URL (shareable, paginate-friendly, no JS needed). Shared by the
- * dashboard, targets, and scans lists.
+ * the URL (shareable, paginate-friendly, no JS needed). Used by the dashboard
+ * target list.
  *
- * @var string $action   form action (the current list path, e.g. '/scans')
+ * @var string $action   form action (the current list path, e.g. '/dashboard')
  * @var array  $hosts     distinct hosts to populate the host dropdown
  * @var string $fResult   currently selected result filter ('', 'ok', 'failed')
  * @var string $fHost     currently selected host filter ('' = all)

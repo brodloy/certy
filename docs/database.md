@@ -95,8 +95,9 @@ history timeline. **No stored status** — urgency is derived at render time (se
 ### `MonitorRun` — one row per scheduled/CLI scan run
 
 Operational log so you can confirm the scheduler is firing and see what each run
-did. Written only by `console monitor:run` (see `scheduling.md`); nothing in the
-web app reads it (yet). Not tied to a target — no foreign key, pure append-only.
+did. Written only by `console monitor:run` (see `scheduling.md`); read by the
+**admin dashboard** (`/admin`) for the last scheduled/manual run + recent history.
+Not tied to a target — no foreign key, pure append-only.
 
 | Column | Type | Notes |
 |---|---|---|
