@@ -11,6 +11,9 @@ return [
     'debug'    => true,        // true locally (show errors). Set FALSE in production.
     'timezone' => 'UTC',       // how dates are DISPLAYED (stored in UTC always). e.g. 'Europe/London'
 
+    // Monitoring
+    'scan_interval_minutes' => 720, // `monitor:run --due` skips targets checked within this window (minutes; 720 = 12h)
+
     // Database — defaults match MAMP. WAMP/standard MySQL uses port 3306.
     'db_host' => '127.0.0.1',
     'db_port' => '8889',

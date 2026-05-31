@@ -51,12 +51,19 @@ checks on a timer and records results.
       `Checked 3 target(s): 3 ok, 0 failed.` exit 0, `CheckResult` 6→9, all three
       `Last*` snapshots refreshed.
 
-### Phase 2 — "due" filtering + interval  ☐
-- [ ] Add a check interval (config value, e.g. `scan_interval_minutes`).
-- [ ] `monitor:run --due` scans only active targets whose `LastCheckedAt` is null
-      or older than the interval.
-- [ ] Plain `monitor:run` still scans all active (manual/forced full run).
-- [ ] Lint; test that fresh targets are skipped with `--due` and stale ones run.
+### Phase 2 — "due" filtering + interval  ☑
+- [x] Add a check interval (config value `scan_interval_minutes`, default 720 =
+      12h) to `config.example.php` and `config.php`. Read via
+      `config('scan_interval_minutes', 720)`.
+- [x] `monitor:run --due` scans only active targets whose `LastCheckedAt` is null
+      or older than the interval. The due-set is selected in `console` (house
+      style: SQL via `db()`), then its ids are passed to `runChecks($ids)` — no
+      change to `MonitorService`. Prints `Due run (interval Nm): K target(s) due`,
+      or a "nothing due" line when all targets are fresh.
+- [x] Plain `monitor:run` still scans all active (`runChecks(null)`).
+- [x] Lint; verified on MAMP — A: all-fresh → nothing due; B: one aged target →
+      only it re-checked (others untouched, CheckResult +1); C: plain run
+      force-checked all three (CheckResult +3, one shared timestamp).
 
 ### Phase 3 — scheduler setup + docs  ☐
 - [ ] Write `docs/scheduling.md`: how to run it on a timer on Windows (Task
@@ -73,12 +80,12 @@ checks on a timer and records results.
 
 ## Current status
 
-**Phase 1 done & verified.** Next: Phase 2 (`--due` filtering + interval).
+**Phase 2 done & verified.** Next: Phase 3 (scheduler setup + docs).
 
 | Phase | State |
 |---|---|
 | 1 — monitor:run (all active) | ☑ done, verified on MAMP |
-| 2 — --due filtering | ☐ not started |
+| 2 — --due filtering | ☑ done, verified on MAMP |
 | 3 — scheduler setup + docs | ☐ not started |
 | 4 — run visibility (optional) | ☐ not started |
 
@@ -99,3 +106,11 @@ checks on a timer and records results.
   until it's uncommented. Enabled on this machine (backup at `php.ini.certy-bak`).
   **The Phase 3 scheduler docs must call this out** as a prerequisite for whichever
   PHP the scheduled task invokes.
+- **Phase 2: due-selection lives in `console`, not `MonitorService`.** The service
+  stays a pure "check these ids (or all active)" engine; deciding *which* are due
+  is a CLI concern, so the `IsActive=1 AND (LastCheckedAt IS NULL OR < cutoff)`
+  query sits in `monitorRun()` and feeds `runChecks($ids)`. Keeps the service
+  unchanged and the trigger-specific policy at the edge.
+- **Interval default = 720 min (12h).** Cert/domain expiry moves slowly; a 12h
+  due-window means a scheduler firing hourly checks each target ~twice a day.
+  Tunable per machine via `scan_interval_minutes` in `config.php`.
