@@ -14,9 +14,9 @@ return [
     // Monitoring
     'scan_interval_minutes' => 720, // `monitor:run --due` skips targets checked within this window (minutes; 720 = 12h)
 
-    // Database — defaults match MAMP. WAMP/standard MySQL uses port 3306.
+    // Database — 127.0.0.1:3306, root/root. (Classic MAMP defaults to port 8889.)
     'db_host' => '127.0.0.1',
-    'db_port' => '8889',
+    'db_port' => '3306',
     'db_name' => 'certy',
     'db_user' => 'root',
     'db_pass' => 'root',
