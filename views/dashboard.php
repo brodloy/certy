@@ -26,17 +26,23 @@ $ico = fn (string $body): string =>
     </div>
 </div>
 
-<div class="row g-3 mb-4">
-    <div class="col-sm-3 col-6"><div class="card stat-card h-100"><div class="card-body">
+<div class="row g-3 mb-4 row-cols-2 row-cols-md-3">
+    <div class="col"><div class="card stat-card h-100"><div class="card-body">
         <div class="stat-label">Healthy</div><div class="stat-value" data-kpi="healthy" style="color:var(--ok)"><?= e((string) $tally['healthy']) ?></div>
     </div></div></div>
-    <div class="col-sm-3 col-6"><div class="card stat-card h-100"><div class="card-body">
+    <div class="col"><div class="card stat-card h-100"><div class="card-body">
         <div class="stat-label">Expiring soon</div><div class="stat-value" data-kpi="warning" style="color:var(--warn)"><?= e((string) $tally['warning']) ?></div>
     </div></div></div>
-    <div class="col-sm-3 col-6"><div class="card stat-card h-100"><div class="card-body">
+    <div class="col"><div class="card stat-card h-100"><div class="card-body">
         <div class="stat-label">Critical</div><div class="stat-value" data-kpi="critical" style="color:var(--danger)"><?= e((string) $tally['critical']) ?></div>
     </div></div></div>
-    <div class="col-sm-3 col-6"><div class="card stat-card h-100"><div class="card-body">
+    <div class="col"><div class="card stat-card h-100"><div class="card-body">
+        <div class="stat-label">Expired</div><div class="stat-value" data-kpi="expired" style="color:var(--danger)"><?= e((string) $tally['expired']) ?></div>
+    </div></div></div>
+    <div class="col"><div class="card stat-card h-100"><div class="card-body">
+        <div class="stat-label">Failed</div><div class="stat-value" data-kpi="failed" style="color:var(--danger)"><?= e((string) $tally['failed']) ?></div>
+    </div></div></div>
+    <div class="col"><div class="card stat-card h-100"><div class="card-body">
         <div class="stat-label">Unchecked</div><div class="stat-value" data-kpi="unknown" style="color:var(--neutral)"><?= e((string) $tally['unknown']) ?></div>
     </div></div></div>
 </div>
@@ -67,7 +73,7 @@ $ico = fn (string $body): string =>
                 $isOk    = $r['LastIsOk'] === null ? null : (int) $r['LastIsOk'];
                 $days    = $r['LastDaysLeft'] === null ? null : (int) $r['LastDaysLeft'];
                 $status  = monitor_status($isOk, $days);
-                $colour  = ['healthy' => 'ok', 'warning' => 'warn', 'critical' => 'danger', 'unknown' => 'neutral'][$status];
+                $colour  = ['healthy' => 'ok', 'warning' => 'warn', 'critical' => 'danger', 'expired' => 'danger', 'failed' => 'danger', 'unknown' => 'neutral'][$status];
                 $id      = (int) $r['PK_MonitoredTargetID'];
             ?>
                 <tr data-row="<?= e((string) $id) ?>">
@@ -82,7 +88,7 @@ $ico = fn (string $body): string =>
                     <td class="col-type"><span class="badge-soft"><?= e($r['TypeCode']) ?></span></td>
                     <td>
                         <div data-cell="expires"><?= $r['LastExpiresAt'] ? e(format_date($r['LastExpiresAt'], 'M j, Y')) : '<span class="text-faint">—</span>' ?></div>
-                        <div class="days-left" data-cell="days" style="font-size:.8rem;color:var(--<?= e($colour) ?>)"><?= $days === null ? '<span class="text-faint">not checked</span>' : e((string) $days) . ' days left' ?></div>
+                        <div class="days-left" data-cell="days" style="font-size:.8rem;color:var(--<?= e($colour) ?>)"><?= $days === null ? '<span class="text-faint">' . ($status === 'failed' ? 'check failed' : 'not checked') . '</span>' : e(days_left_label($days)) ?></div>
                     </td>
                     <td class="col-checked text-faint" data-cell="checked" style="font-family:var(--font-mono);font-size:.78rem;">
                         <?= $r['LastCheckedAt'] ? e(format_date($r['LastCheckedAt'], 'M j, g:i A')) : 'never' ?>

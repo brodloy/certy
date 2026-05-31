@@ -385,7 +385,9 @@ function send_mail(string $to, string $subject, string $body): void
 
 /**
  * Derive a target's urgency from its latest check. Returns one of:
- *   'healthy' | 'warning' | 'critical' | 'unknown'
+ *   'healthy' | 'warning' | 'critical' | 'expired' | 'failed' | 'unknown'
+ * 'expired' = past expiry (negative days); 'critical' = 0–7 days left;
+ * 'failed' = the check ran but errored (host unreachable); 'unknown' = never checked.
  * mapped to the badge / colour classes used across the dashboard. Status is
  * always DERIVED (never stored) so it can't go stale as days tick down.
  *
@@ -398,18 +400,35 @@ function monitor_status(?int $lastIsOk, ?int $daysLeft): string
         return 'unknown';            // never checked yet
     }
     if ((int) $lastIsOk !== 1) {
-        return 'unknown';            // last check failed (host unreachable, etc.)
+        return 'failed';             // last check ran but failed (host unreachable, no TLS, etc.)
     }
     if ($daysLeft === null) {
         return 'unknown';
     }
+    if ($daysLeft < 0) {
+        return 'expired';            // already past expiry
+    }
     if ($daysLeft <= 7) {
-        return 'critical';           // <= 7 days or already expired (negative)
+        return 'critical';           // 0–7 days left — urgent but still valid
     }
     if ($daysLeft <= 30) {
         return 'warning';            // within ~30 days
     }
     return 'healthy';
+}
+
+/**
+ * Human "days left" text for a snapshot, sign-aware:
+ *   5  → "5 days left"   ·   1 → "1 day left"
+ *   -3 → "expired 3 days ago"   ·   -1 → "expired 1 day ago"
+ */
+function days_left_label(int $days): string
+{
+    if ($days < 0) {
+        $n = abs($days);
+        return 'expired ' . $n . ' day' . ($n === 1 ? '' : 's') . ' ago';
+    }
+    return $days . ' day' . ($days === 1 ? '' : 's') . ' left';
 }
 
 /** Human label for a status, e.g. for a tooltip or screen-reader text. */
@@ -419,6 +438,8 @@ function monitor_status_label(string $status): string
         'healthy'  => 'Healthy',
         'warning'  => 'Expiring soon',
         'critical' => 'Critical',
+        'expired'  => 'Expired',
+        'failed'   => 'Failed',
         'unknown'  => 'Unknown',
     ][$status] ?? 'Unknown';
 }

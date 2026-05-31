@@ -90,7 +90,7 @@ $runPanel = function (?array $run, string $heading, string $empty): string {
     <div class="col-md-6"><div class="card h-100"><div class="card-body">
         <h3 class="h6 mb-3">Targets</h3>
         <div class="d-flex flex-wrap gap-2 mb-3">
-            <?php foreach (['healthy' => 'ok', 'warning' => 'warn', 'critical' => 'danger', 'unknown' => 'neutral'] as $k => $var): ?>
+            <?php foreach (['healthy' => 'ok', 'warning' => 'warn', 'critical' => 'danger', 'expired' => 'danger', 'failed' => 'danger', 'unknown' => 'neutral'] as $k => $var): ?>
                 <span class="badge-soft is-<?= e($k) ?>"><?= e((string) $health[$k]) ?> <?= e($k) ?></span>
             <?php endforeach; ?>
         </div>

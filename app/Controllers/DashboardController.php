@@ -31,7 +31,7 @@ class DashboardController
         );
 
         // KPI tally from ALL targets (never filtered).
-        $tally = ['healthy' => 0, 'warning' => 0, 'critical' => 0, 'unknown' => 0];
+        $tally = ['healthy' => 0, 'warning' => 0, 'critical' => 0, 'expired' => 0, 'failed' => 0, 'unknown' => 0];
         $hosts = [];
         foreach ($all as $r) {
             $tally[monitor_status(

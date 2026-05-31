@@ -43,7 +43,7 @@ class AdminController
         );
 
         // System-wide status tally — derived in PHP (same rule as everywhere).
-        $health = ['healthy' => 0, 'warning' => 0, 'critical' => 0, 'unknown' => 0];
+        $health = ['healthy' => 0, 'warning' => 0, 'critical' => 0, 'expired' => 0, 'failed' => 0, 'unknown' => 0];
         foreach (db()->all("SELECT `LastIsOk`, `LastDaysLeft` FROM `MonitoredTarget`") as $s) {
             $health[monitor_status(
                 $s['LastIsOk'] === null ? null : (int) $s['LastIsOk'],

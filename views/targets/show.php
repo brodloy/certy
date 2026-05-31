@@ -23,7 +23,7 @@ $status = monitor_status($isOk, $days);
     <div class="col-sm-6"><div class="card h-100"><div class="card-body">
         <div class="stat-label">Expires</div>
         <div class="fw-medium mt-1" style="font-size:1.1rem;"><?= $target['LastExpiresAt'] ? e(format_date($target['LastExpiresAt'], 'M j, Y')) : '—' ?></div>
-        <div class="text-muted-2" style="font-size:.9rem;"><?= $days === null ? 'not checked yet' : e((string) $days) . ' days left' ?></div>
+        <div class="text-muted-2" style="font-size:.9rem;"><?= $days === null ? ($status === 'failed' ? 'last check failed' : 'not checked yet') : e(days_left_label($days)) ?></div>
     </div></div></div>
     <div class="col-sm-6"><div class="card h-100"><div class="card-body">
         <div class="stat-label">Last checked</div>

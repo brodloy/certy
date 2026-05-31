@@ -61,8 +61,14 @@ document.addEventListener('submit', function (event) {
     var checkMeta = document.querySelector('meta[name="check-url"]');
     var checkUrl = checkMeta ? checkMeta.getAttribute('content') : '/targets/check';
 
-    var STATUS_LABEL = { healthy: 'healthy', warning: 'warning', critical: 'critical', unknown: 'unknown' };
-    var STATUS_VAR   = { healthy: 'ok', warning: 'warn', critical: 'danger', unknown: 'neutral' };
+    var STATUS_LABEL = { healthy: 'healthy', warning: 'warning', critical: 'critical', expired: 'expired', failed: 'failed', unknown: 'unknown' };
+    var STATUS_VAR   = { healthy: 'ok', warning: 'warn', critical: 'danger', expired: 'danger', failed: 'danger', unknown: 'neutral' };
+
+    // Sign-aware "days left" text, mirrors days_left_label() in helpers.php.
+    function daysLeftText(d) {
+        if (d < 0) { var n = Math.abs(d); return 'expired ' + n + ' day' + (n === 1 ? '' : 's') + ' ago'; }
+        return d + ' day' + (d === 1 ? '' : 's') + ' left';
+    }
 
     function setBusy(btn, busy) {
         if (!btn) return;
@@ -95,7 +101,8 @@ document.addEventListener('submit', function (event) {
         if (days) {
             days.style.color = cssVar;
             days.innerHTML = (res.days_left === null || res.days_left === undefined)
-                ? '<span class="text-faint">not checked</span>' : (res.days_left + ' days left');
+                ? '<span class="text-faint">' + (res.status === 'failed' ? 'check failed' : 'not checked') + '</span>'
+                : daysLeftText(res.days_left);
         }
         if (exp)  { exp.textContent = res.expires_at ? fmtDate(res.expires_at) : '—'; }
         if (chk)  { chk.textContent = 'just now'; }
@@ -105,9 +112,9 @@ document.addEventListener('submit', function (event) {
     // Recompute the KPI cards from the statuses currently shown in the table,
     // so the counts always match the rows after a scan (no page reload needed).
     function recomputeKpis() {
-        var counts = { healthy: 0, warning: 0, critical: 0, unknown: 0 };
+        var counts = { healthy: 0, warning: 0, critical: 0, expired: 0, failed: 0, unknown: 0 };
         document.querySelectorAll('[data-cell="status"] .badge-soft').forEach(function (b) {
-            ['healthy', 'warning', 'critical', 'unknown'].forEach(function (s) {
+            ['healthy', 'warning', 'critical', 'expired', 'failed', 'unknown'].forEach(function (s) {
                 if (b.classList.contains('is-' + s)) counts[s]++;
             });
         });

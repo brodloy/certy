@@ -15,7 +15,7 @@
     --bg:            #ffffff;   /* panels / cards */
     --bg-tint:       #f8fafc;   /* sidebar / inputs / subtle panels */
     --bg-page:       #f1f5f9;   /* page background */
-    --surface-blur:  rgba(255, 255, 255, 0.78);  /* frosted topbar (flips in dark) */
+    --surface-blur:  var(--bg);   /* opaque topbar — content must not show through when scrolling under it */
     --text:          #0f172a;   /* primary text (slate-900) */
     --text-muted:    #475569;   /* secondary text (slate-600) */
     --text-faint:    #94a3b8;   /* hints, timestamps (slate-400) */
@@ -306,7 +306,10 @@ code { color: var(--accent-text); background: var(--accent-soft);
 }
 
 /* ---- App shell (sidebar + content) --------------------------------------- */
-.app-shell { display: flex; min-height: 100vh; }
+/* The shell fills the viewport and hides overflow; the topbar is a fixed-height
+   header and .app-content is the only scrolling region — so page content scrolls
+   BELOW the topbar, never under it. */
+.app-shell { display: flex; height: 100vh; height: 100dvh; overflow: hidden; }
 
 .app-sidebar {
     width: 248px;
@@ -316,6 +319,7 @@ code { color: var(--accent-text); background: var(--accent-soft);
     padding: 1.1rem 0.8rem;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
 }
 .app-sidebar .brand {
     font-family: var(--font-mono);
@@ -347,19 +351,18 @@ code { color: var(--accent-text); background: var(--accent-soft);
 }
 .app-sidebar .sidebar-foot { margin-top: auto; border-top: 1px solid var(--border); padding-top: 0.85rem; }
 
-.app-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.app-main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
 .app-topbar {
     height: 60px;
+    flex-shrink: 0;
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 1.75rem;
     background: var(--surface-blur);
-    backdrop-filter: saturate(180%) blur(12px);
-    position: sticky; top: 0; z-index: 50;
 }
-.app-content { padding: 2rem; width: 100%; }
+.app-content { padding: 2rem; width: 100%; flex: 1; min-height: 0; overflow-y: auto; }
 
 /* ---- Auth card ----------------------------------------------------------- */
 .auth-wrap {
@@ -438,6 +441,8 @@ code { color: var(--accent-text); background: var(--accent-soft);
 .badge-soft.is-warning  { color: var(--warn);    border-color: rgba(217,119,6,0.30);  background: var(--warn-soft); }
 .badge-soft.is-critical { color: var(--danger);  border-color: rgba(220,38,38,0.30);  background: var(--danger-soft); }
 .badge-soft.is-unknown  { color: var(--neutral); border-color: rgba(100,116,139,0.30);background: var(--neutral-soft); }
+.badge-soft.is-expired  { color: var(--danger);  border-color: rgba(220,38,38,0.45);  background: var(--danger-soft); font-weight: 600; }
+.badge-soft.is-failed   { color: var(--danger);  border-color: rgba(220,38,38,0.30);  background: var(--danger-soft); }
 
 /* ---- Tables / lists ------------------------------------------------------ */
 /* Let cells show the white card/table-card behind them. Bootstrap defaults
@@ -761,7 +766,7 @@ code { color: var(--accent-text); background: var(--accent-soft);
     --bg:            #161f31;   /* panels / cards (lighter than the page) */
     --bg-tint:       #1e293b;   /* sidebar / inputs / hover / subtle panels */
     --bg-page:       #0b1220;   /* page background (darkest) */
-    --surface-blur:  rgba(17, 24, 39, 0.72);   /* frosted topbar */
+    --surface-blur:  var(--bg);   /* opaque topbar (dark) */
 
     --text:          #e2e8f0;   /* primary text (slate-200) */
     --text-muted:    #94a3b8;   /* secondary (slate-400) */
@@ -792,7 +797,10 @@ code { color: var(--accent-text); background: var(--accent-soft);
 
 /* Theme toggle — show the icon/label for the action the click performs. */
 .theme-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; }
-.theme-toggle svg { width: 15px; height: 15px; }
-.theme-when-dark { display: none; }
+.theme-toggle svg { width: 15px; height: 15px; flex: none; }
+/* Both labels are flex rows (icon + text); only the one for the current theme shows. */
+.theme-when-light, .theme-when-dark { align-items: center; gap: 0.4rem; }
+.theme-when-light { display: inline-flex; }
+.theme-when-dark  { display: none; }
 [data-bs-theme="dark"] .theme-when-light { display: none; }
-[data-bs-theme="dark"] .theme-when-dark { display: inline-flex; align-items: center; gap: 0.4rem; }
+[data-bs-theme="dark"] .theme-when-dark  { display: inline-flex; }

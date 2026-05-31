@@ -121,7 +121,9 @@ plus two **unused** leftovers kept to preserve migration history: `Example`,
 ## Status derivation (not stored — computed)
 
 `monitor_status($lastIsOk, $daysLeft)` →
-- `unknown` — never checked, or last check failed (`LastIsOk` null or 0)
-- `critical` — `days_left <= 7` (or expired/negative)
+- `unknown` — never checked yet (`LastIsOk` null)
+- `failed` — last check ran but errored (`LastIsOk` = 0; host unreachable, no TLS)
+- `expired` — `days_left < 0` (already past expiry)
+- `critical` — `days_left` 0–7 (urgent but still valid)
 - `warning` — `days_left <= 30`
 - `healthy` — otherwise
