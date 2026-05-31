@@ -89,6 +89,8 @@ h3 { font-size: 1.2rem; }
 
 a { text-decoration: none; color: var(--accent-text); }
 a:hover { text-decoration: underline; }
+/* Anchors styled as buttons should never underline — match real <button>s. */
+.btn:hover, .btn:focus { text-decoration: none; }
 
 code { color: var(--accent-text); background: var(--accent-soft);
     padding: 0.08em 0.4em; border-radius: var(--radius-sm); font-size: 0.88em; }
