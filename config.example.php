@@ -6,7 +6,7 @@
 
 return [
     // App
-    'app_name' => 'certy.io',
+    'app_name' => 'certy',
     'app_url'  => 'http://localhost:8000',
     'debug'    => true,        // true locally (show errors). Set FALSE in production.
     'timezone' => 'UTC',       // how dates are DISPLAYED (stored in UTC always). e.g. 'Europe/London'

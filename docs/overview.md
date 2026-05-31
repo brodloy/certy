@@ -1,4 +1,4 @@
-# certy.io — Overview
+# certy — Overview
 
 > **Keep this current.** When a feature ships, changes, or is removed, update this
 > file in the same task. A stale doc is worse than none — it confidently misleads.
@@ -6,9 +6,9 @@
 
 ## What it is
 
-certy.io is a **hosted, multi-tenant SSL certificate & domain expiry monitor**.
+certy is a **hosted, multi-tenant SSL certificate & domain expiry monitor**.
 Users sign up, add the hosts and domains they care about (up to 10 each), and
-certy.io checks them **from the outside** — reading each certificate over a raw
+certy checks them **from the outside** — reading each certificate over a raw
 TLS handshake, and each domain's registration over raw WHOIS (port 43) — then
 shows a colour-coded dashboard and (planned) emails alerts before anything lapses.
 

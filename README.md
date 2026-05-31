@@ -1,7 +1,7 @@
-# certy.io
+# certy
 
 A hosted, multi-tenant **SSL certificate & domain expiry monitor**. Users sign
-up, add the hosts and domains they care about (up to 10 each), and certy.io
+up, add the hosts and domains they care about (up to 10 each), and certy
 checks them **from the outside** — reading each certificate over a raw TLS
 handshake and each domain's registration over raw WHOIS (port 43) — then surfaces
 a colour-coded dashboard.

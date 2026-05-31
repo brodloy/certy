@@ -1,9 +1,9 @@
-# certy.io — Scheduling (unattended scans)
+# certy — Scheduling (unattended scans)
 
 > **Keep this current.** Update in the same task as any change to `monitor:run`
 > or its flags. Last verified against the code: 2026-05-31.
 
-This is how to run certy.io's checks **unattended on a timer**, instead of only
+This is how to run certy's checks **unattended on a timer**, instead of only
 when someone clicks "Scan". The work itself is done by the
 `monitor:run` CLI command (see `architecture.md`); this doc is operations only.
 
@@ -84,7 +84,7 @@ schtasks /Create /TN "certy monitor:run" /SC HOURLY ^
 
 ## Linux — cron (future deploy)
 
-When certy.io moves to a Linux host, the equivalent is a crontab entry. Hourly:
+When certy moves to a Linux host, the equivalent is a crontab entry. Hourly:
 
 ```cron
 0 * * * * cd /var/www/certy && /usr/bin/php console monitor:run --due >> storage/logs/monitor.log 2>&1

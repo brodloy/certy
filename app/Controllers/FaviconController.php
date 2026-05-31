@@ -100,7 +100,7 @@ class FaviconController
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_CONNECTTIMEOUT => 4,
             CURLOPT_TIMEOUT        => 6,
-            CURLOPT_USERAGENT      => 'certy.io favicon proxy',
+            CURLOPT_USERAGENT      => 'certy favicon proxy',
         ]);
         // Google 301-redirects, and serves a generic fallback icon with a 404
         // for domains it has no real favicon for — so we don't require a 200.
@@ -114,7 +114,7 @@ class FaviconController
     {
         $ctx = stream_context_create(['http' => [
             'timeout'         => 6,
-            'user_agent'      => 'certy.io favicon proxy',
+            'user_agent'      => 'certy favicon proxy',
             'follow_location' => 1,
             'ignore_errors'   => true, // keep the body even on Google's 404 fallback icon
         ]]);

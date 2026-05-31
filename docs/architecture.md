@@ -1,4 +1,4 @@
-# certy.io — Architecture
+# certy — Architecture
 
 > **Keep this current.** Update in the same task as any structural change.
 > Last verified against the code: 2026-05-31.

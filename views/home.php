@@ -4,7 +4,7 @@
 <section class="landing-hero">
     <div class="hero-inner">
         <h1 class="reveal">Stop getting <span class="accent">surprised</span> by expired certificates.</h1>
-        <p class="lead reveal d1">certy.io monitors your SSL certificates and domains, and warns you in time.</p>
+        <p class="lead reveal d1">certy monitors your SSL certificates and domains, and warns you in time.</p>
         <div class="hero-cta reveal d2">
             <a class="btn btn-primary" href="<?= e(url('/register')) ?>">Start monitoring &mdash; free</a>
         </div>
@@ -15,7 +15,7 @@
         <div class="browser-frame">
             <div class="browser-bar">
                 <span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span>
-                <span class="browser-url">certy.io/dashboard</span>
+                <span class="browser-url">certy/dashboard</span>
             </div>
             <div class="mini-dash">
                 <div class="mini-title">Your monitors</div>
@@ -168,7 +168,7 @@
     <div class="container">
         <div class="cta-band">
             <h2>Start watching your certificates in two minutes.</h2>
-            <p>Add your first ten hosts and domains, and let certy.io carry the deadline for you.</p>
+            <p>Add your first ten hosts and domains, and let certy carry the deadline for you.</p>
             <a class="btn btn-light" href="<?= e(url('/register')) ?>">Create your free account</a>
         </div>
     </div>

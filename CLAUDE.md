@@ -1,11 +1,11 @@
-# CLAUDE.md — certy.io
+# CLAUDE.md — certy
 
 Read automatically at the start of every session. How this project works and how
 I want you to work in it. **Keep it short.**
 
 ## What this project is
 
-certy.io — a hosted, multi-tenant SSL-certificate & domain-expiry monitor, built
+certy — a hosted, multi-tenant SSL-certificate & domain-expiry monitor, built
 on a no-dependency PHP 8 starter (no Composer, no namespaces, no framework).
 Runs locally on MAMP (Windows, Apache, MySQL, PHP 8.3).
 

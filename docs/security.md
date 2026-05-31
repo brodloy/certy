@@ -1,4 +1,4 @@
-# certy.io — Security
+# certy — Security
 
 > **Keep this current, and treat it as rules — not suggestions.** These are the
 > invariants that keep tenants isolated and accounts safe. If a task would break
@@ -6,7 +6,7 @@
 
 ## 1. Per-user ownership (multi-tenant isolation) — the most important rule
 
-certy.io is multi-tenant: every user must see and touch **only their own**
+certy is multi-tenant: every user must see and touch **only their own**
 targets and scan results. There is no shared data.
 
 - **Every query that reads or writes a target is scoped by `FK_UserID`.** The

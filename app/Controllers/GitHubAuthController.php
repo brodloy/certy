@@ -18,7 +18,7 @@
  */
 class GitHubAuthController
 {
-    private const UA = 'certy.io-oauth';
+    private const UA = 'certy-oauth';
 
     public function redirect(): string
     {
