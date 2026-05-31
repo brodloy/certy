@@ -1,0 +1,13 @@
+# Send every request that isn't a real file to index.php (the front controller).
+# This gives us clean URLs like /examples/create. Requires Apache mod_rewrite
+# (on by default in MAMP/XAMPP/WAMP).
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# Never list directory contents.
+Options -Indexes

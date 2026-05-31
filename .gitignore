@@ -1,0 +1,10 @@
+# Local config (copy config.example.php → config.php)
+/config.php
+
+# Logs and uploaded files
+/storage/logs/*.log
+/storage/uploads/*
+!/storage/uploads/.gitkeep
+
+# OS / editor junk
+.DS_Store

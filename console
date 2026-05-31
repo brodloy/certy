@@ -1,0 +1,146 @@
+<?php
+/**
+ * CONSOLE — the command-line tool. Run from the project root:
+ *
+ *   php console db:migrate          run any new migrations
+ *   php console db:install          migrate, then load the demo data
+ *   php console db:install --fresh  DROP everything, then migrate + seed  (DEV ONLY)
+ *   php console db:seed             load the demo data
+ *   php console db:cleanup          prune expired tokens + old login attempts
+ *
+ * Migrations are the plain .sql files in database/migrations/, run in filename
+ * order. Each one that runs is recorded in a `Migration` table, so db:migrate
+ * only ever runs the new ones. To change the schema later, add the next
+ * numbered file (e.g. 009_add_column.sql) and run db:migrate.
+ */
+
+require __DIR__ . '/bootstrap.php';
+
+$command = $argv[1] ?? 'help';
+$flags   = array_slice($argv, 2);
+
+try {
+    match ($command) {
+        'db:migrate' => migrate(),
+        'db:install' => install(in_array('--fresh', $flags, true)),
+        'db:seed'    => seed(),
+        'db:cleanup' => cleanup(),
+        'monitor:run' => monitorRun(),
+        default      => help(),
+    };
+} catch (Throwable $e) {
+    fwrite(STDERR, "Error: " . $e->getMessage() . PHP_EOL);
+    exit(1);
+}
+
+// --- commands --------------------------------------------------------------
+
+function migrate(): void
+{
+    db()->run(
+        'CREATE TABLE IF NOT EXISTS `Migration` (
+            `PK_MigrationID` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `Filename` VARCHAR(190) NOT NULL,
+            `RanAt` DATETIME NOT NULL,
+            PRIMARY KEY (`PK_MigrationID`),
+            UNIQUE KEY `uq_migration` (`Filename`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
+
+    $done = array_column(db()->all('SELECT `Filename` FROM `Migration`'), 'Filename');
+    $files = glob(BASE_PATH . '/database/migrations/*.sql');
+    sort($files);
+
+    $ran = 0;
+    foreach ($files as $file) {
+        $name = basename($file);
+        if (in_array($name, $done, true)) {
+            continue;
+        }
+        db()->run('SET FOREIGN_KEY_CHECKS = 1'); // be explicit
+        db()->run('INSERT INTO `Migration` (`Filename`, `RanAt`) VALUES (?, ?)', [$name, gmdate('Y-m-d H:i:s')]);
+        // A migration file may contain several statements; execRaw allows that.
+        db()->execRaw(file_get_contents($file));
+        echo "  migrated  {$name}" . PHP_EOL;
+        $ran++;
+    }
+    echo $ran === 0 ? "Nothing to migrate (up to date)." . PHP_EOL : "Done: {$ran} migration(s)." . PHP_EOL;
+}
+
+function install(bool $fresh): void
+{
+    if ($fresh) {
+        echo "Dropping all tables (--fresh)..." . PHP_EOL;
+        dropAllTables();
+    }
+    migrate();
+    seed();
+}
+
+function seed(): void
+{
+    // The seed file has multiple INSERT statements; execRaw runs them all
+    // (a prepared statement would reject more than one statement at once).
+    db()->execRaw(file_get_contents(BASE_PATH . '/database/seed.sql'));
+    echo "Seeded demo data." . PHP_EOL;
+}
+
+function cleanup(): void
+{
+    $now = gmdate('Y-m-d H:i:s');
+    $old = gmdate('Y-m-d H:i:s', time() - 60 * 60 * 24 * 30); // 30 days ago
+
+    db()->run('DELETE FROM `PasswordReset` WHERE `ExpiresAt` < ?', [$now]);
+    db()->run('DELETE FROM `EmailVerification` WHERE `ExpiresAt` < ?', [$now]);
+    db()->run('DELETE FROM `RememberToken` WHERE `ExpiresAt` < ?', [$now]);
+    db()->run('DELETE FROM `LoginAttempt` WHERE `CreatedAt` < ?', [$old]);
+    echo "Cleaned up expired tokens and old login attempts." . PHP_EOL;
+}
+
+function monitorRun(): void
+{
+    // Scheduled-scan entry point. A thin CLI wrapper over the SAME path the
+    // "Scan all" button uses: MonitorService::runChecks(null) loads EVERY active
+    // target across ALL users (a system job, not user-scoped), runs the right
+    // checker, writes a CheckResult row and refreshes the Last* snapshot.
+    // Sends no alerts (that's a future, separate trigger). If the service throws,
+    // we let it bubble to the top-level try/catch, which exits non-zero so a
+    // scheduler can detect the failure.
+    $results = (new MonitorService())->runChecks();
+
+    $total = count($results);
+    $ok    = 0;
+    foreach ($results as $r) {
+        if (!empty($r['ok'])) {
+            $ok++;
+        }
+    }
+    $failed = $total - $ok;
+
+    echo "Checked {$total} target(s): {$ok} ok, {$failed} failed." . PHP_EOL;
+}
+
+function dropAllTables(): void
+{
+    db()->run('SET FOREIGN_KEY_CHECKS = 0');
+    foreach (db()->all('SHOW TABLES') as $row) {
+        $table = array_values($row)[0];
+        db()->run("DROP TABLE IF EXISTS `{$table}`");
+    }
+    db()->run('SET FOREIGN_KEY_CHECKS = 1');
+}
+
+function help(): void
+{
+    echo <<<TXT
+    Usage: php console <command>
+
+      db:migrate          run any new migrations
+      db:install          migrate, then load demo data
+      db:install --fresh  DROP all tables, then migrate + seed (DEV ONLY)
+      db:seed             load demo data
+      db:cleanup          prune expired tokens + old login attempts (good for cron)
+      monitor:run         run checks now on all active targets (good for cron)
+
+    TXT;
+}
