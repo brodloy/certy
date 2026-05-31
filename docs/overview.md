@@ -33,6 +33,9 @@ namespaces, no framework). See `architecture.md`.
 - **Targets**: add / edit / delete, per-user, capped at 10. Active/paused toggle.
 - **Scanning**: on-demand "Scan" (one target) and "Scan all" — live, no reload.
   Generates data via one path (`MonitorService`). SSL + domain checkers both work.
+- **Scheduled scanning**: `php console monitor:run [--due]` runs checks unattended
+  on a timer (Task Scheduler / cron), `--due` honouring `scan_interval_minutes`.
+  Same data path as manual scans; no alerts yet. See `scheduling.md`.
 - **Dashboard**: colour-coded status table + KPI tally, result/host filters.
 - **Scans list**: flat, read-only history of every check, result/host filters.
 - **Per-target history**: timeline of a target's past checks.
@@ -40,11 +43,9 @@ namespaces, no framework). See `architecture.md`.
   connected accounts (link/unlink Google/GitHub), delete account.
 
 **Deferred (not built yet):**
-- **Scheduled scanning** — a `monitor:run` CLI command on a timer (cron / Task
-  Scheduler) so checks run unattended. The data-generation path already exists;
-  this just calls it on a schedule.
 - **Email alerts** — `AlertDispatcher` + tiered thresholds (30/14/7/1 days) with
   dedup. The DB is already shaped for it (`AlertLog`, `LK_AlertThreshold`).
+  Scheduled scanning (above) is the trigger this will hang off.
 - **Reports / richer visualisation** on top of the scan data.
 
 ## Known caveats

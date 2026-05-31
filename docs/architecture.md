@@ -85,5 +85,10 @@ future scheduled trigger is just another caller of `MonitorService`.
 ## Console / CLI
 
 `php console <command>` — `db:install` (migrate + seed), `db:migrate`,
-`db:cleanup`, and `--fresh` (drop all tables and rebuild). On Windows use the
-full MAMP PHP path, e.g. `C:\MAMP\bin\php\php8.3.1\php.exe console db:install`.
+`db:cleanup`, `--fresh` (drop all tables and rebuild), and `monitor:run`
+(scan active targets; `--due` limits to those older than `scan_interval_minutes`
+— the scheduled-scan entry point, see `scheduling.md`). On Windows use the full
+MAMP PHP path, e.g. `C:\MAMP\bin\php\php8.3.1\php.exe console db:install`.
+
+> The CLI PHP needs `openssl` enabled for SSL checks (MAMP's CLI build disables it
+> by default — separate `php.ini` from Apache's). See `scheduling.md`.

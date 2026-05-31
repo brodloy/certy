@@ -65,13 +65,17 @@ checks on a timer and records results.
       only it re-checked (others untouched, CheckResult +1); C: plain run
       force-checked all three (CheckResult +3, one shared timestamp).
 
-### Phase 3 — scheduler setup + docs  ☐
-- [ ] Write `docs/scheduling.md`: how to run it on a timer on Windows (Task
-      Scheduler calling the MAMP PHP + `console monitor:run --due`) and the cron
-      equivalent for Linux.
-- [ ] Note recommended frequency and the port-43 caveat for domain checks.
-- [ ] Update `docs/overview.md`: move "scheduled scanning" from Deferred to Built.
-- [ ] Update `docs/architecture.md` CLI section with the new command.
+### Phase 3 — scheduler setup + docs  ☑
+- [x] Write `docs/scheduling.md`: Windows Task Scheduler (GUI steps + `schtasks`
+      one-liner) and the Linux cron equivalent, both calling the MAMP PHP +
+      `console monitor:run --due`. Includes the `openssl`-in-CLI prerequisite and
+      a "verifying it works" section. **No task was registered** — the user asked
+      that nothing be set to run; the doc is steps for them to do when ready.
+- [x] Note recommended frequency (fire hourly, let `--due` + the 12h interval
+      throttle) and the port-43/WHOIS caveat for domain checks.
+- [x] Update `docs/overview.md`: scheduled scanning moved Deferred → Built.
+- [x] Update `docs/architecture.md` CLI section with `monitor:run [--due]` and the
+      openssl note.
 
 ### Phase 4 (optional) — run visibility  ☐
 - [ ] Lightweight record of scheduled runs (count, duration, when) — either a log
@@ -80,13 +84,15 @@ checks on a timer and records results.
 
 ## Current status
 
-**Phase 2 done & verified.** Next: Phase 3 (scheduler setup + docs).
+**Phases 1–3 done.** Core feature complete: `monitor:run [--due]` works and is
+documented for unattended use. Only the **optional** Phase 4 (run visibility)
+remains, if wanted.
 
 | Phase | State |
 |---|---|
 | 1 — monitor:run (all active) | ☑ done, verified on MAMP |
 | 2 — --due filtering | ☑ done, verified on MAMP |
-| 3 — scheduler setup + docs | ☐ not started |
+| 3 — scheduler setup + docs | ☑ done (docs only; no task registered) |
 | 4 — run visibility (optional) | ☐ not started |
 
 ## Decisions log
