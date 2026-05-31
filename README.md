@@ -48,17 +48,24 @@ Password reset and email verification need no mail setup locally — the message
 - Optional Google & GitHub sign-in (off by default)
 - Per-user targets capped at 10, with an active/paused toggle, all managed from
   the dashboard
-- Colour-coded dashboard — KPI tally, per-row Scan / Edit / Delete, sorted
-  worst-first. Derived statuses: healthy / expiring soon / critical / expired /
-  failed / unchecked
+- Two check types — **SSL certificate** expiry (raw TLS handshake) and **domain**
+  registration expiry (raw WHOIS, port 43)
+- Colour-coded dashboard — KPI tally, per-row Scan / Edit / Delete, result/host
+  filters, sorted worst-first. Derived statuses: healthy / expiring soon /
+  critical / expired / failed / unchecked
 - On-demand **Scan** and **Scan all** (live, no page reload)
 - Per-target history timeline (click a host), with each host's favicon
 - **Scheduled scanning** via `php console monitor:run --due` (Task Scheduler / cron)
+- **Scales out** — optional DB-backed job queue (`monitor:enqueue`) + parallel
+  `monitor:work` workers run the same scans across many processes
 - **Email alerts** — HTML + plain-text, expiry tiers (30/14/7/1 days) and check
   failures, sent from the scheduled run to verified users
 - **CSV export** — your targets + status, a target's history, and (admin) the
   scan-run log
-- **Admin overview** (`/admin`) — system-wide users / targets / scanner metrics
+- **Admin overview** (`/admin`) — system-wide users / targets / scanner metrics,
+  plus the user list
+- **Account settings** — profile, change/set password (incl. OAuth-only accounts),
+  connect / disconnect Google & GitHub, delete account
 - **Dark mode** — sidebar toggle, follows your OS preference
 - Strict per-user isolation — each user only ever sees their own targets
 
