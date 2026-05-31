@@ -1,0 +1,4 @@
+# Normalise line endings: store text as LF in the repo and check out LF on all
+# platforms. Keeps diffs clean and avoids CRLF surprises on a future Linux deploy
+# (see docs/database.md). Binary files are auto-detected and left untouched.
+* text=auto eol=lf
