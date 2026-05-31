@@ -10,6 +10,17 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?php /* Apply the saved theme (or OS preference) BEFORE first paint — no flash. */ ?>
+    <script>
+        (function () {
+            try {
+                var saved = localStorage.getItem('certy-theme');
+                var dark = saved ? saved === 'dark'
+                    : window.matchMedia('(prefers-color-scheme: dark)').matches;
+                document.documentElement.setAttribute('data-bs-theme', dark ? 'dark' : 'light');
+            } catch (e) {}
+        })();
+    </script>
     <title><?= e($title ?? 'Dashboard') ?> · <?= e(config('app_name')) ?></title>
     <link rel="icon" type="image/svg+xml" href="<?= e(url('assets/img/favicon.svg')) ?>">
     <link rel="icon" type="image/png" sizes="32x32" href="<?= e(url('assets/img/favicon-32.png')) ?>">

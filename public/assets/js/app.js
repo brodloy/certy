@@ -163,3 +163,17 @@ document.addEventListener('submit', function (event) {
     sel.addEventListener('change', sync);
     sync();
 })();
+
+/* ----------------------------------------------------------------------------
+   Dark-mode toggle. The saved theme (or OS preference) is applied pre-paint by
+   an inline script in the layout <head>; this flips it on click and persists.
+   -------------------------------------------------------------------------- */
+(function () {
+    document.addEventListener('click', function (event) {
+        if (!event.target.closest('[data-theme-toggle]')) return;
+        var isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+        var next = isDark ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-bs-theme', next);
+        try { localStorage.setItem('certy-theme', next); } catch (e) {}
+    });
+})();
