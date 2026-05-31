@@ -36,11 +36,21 @@ namespaces, no framework). See `architecture.md`.
   Generates data via one path (`MonitorService`). SSL + domain checkers both work.
 - **Scheduled scanning**: `php console monitor:run [--due]` runs checks unattended
   on a timer (Task Scheduler / cron), `--due` honouring `scan_interval_minutes`.
-  Same data path as manual scans; no alerts yet. Each run is recorded to
-  `MonitorRun`. See `scheduling.md`.
+  Same data path as manual scans. Each run is recorded to `MonitorRun`, and the
+  run is what fires email alerts (below). See `scheduling.md`.
+- **Email alerts**: `AlertDispatcher` (run only by `monitor:run`, never the
+  dashboard scan) emails the target's owner — **HTML + plain-text** — on each
+  expiry tier (`LK_AlertThreshold`: 30/14/7/1 days) and once when a check
+  transitions into **failed**. Dedup via `AlertLog` keyed by the expiry it fired
+  against, so a renewal re-arms every tier. Verified emails only; toggle with
+  `alerts_enabled` in `config.php`.
 - **Dashboard**: the home page — colour-coded status table + KPI tally, with
-  per-row Scan / Edit / Delete and result/host filters. The single list of targets.
+  per-row Scan / Edit / Delete and result/host filters. The single list of targets,
+  sorted worst-first. Status is derived (never stored): healthy / expiring soon /
+  critical (≤7 days) / expired (past) / failed (check errored) / unchecked.
 - **Per-target history**: click a host for the timeline of its past checks.
+- **Dark mode**: sidebar toggle; follows the OS preference by default and is
+  persisted per browser (signed-in app only).
 - **Settings**: profile, password (incl. set-password for OAuth-only users),
   connected accounts (link/unlink Google/GitHub), delete account.
 - **Admin** (admin role only): a system-wide overview at `/admin` — user/target
@@ -49,10 +59,9 @@ namespaces, no framework). See `architecture.md`.
   Admins land here instead of the user dashboard.
 
 **Deferred (not built yet):**
-- **Email alerts** — `AlertDispatcher` + tiered thresholds (30/14/7/1 days) with
-  dedup. The DB is already shaped for it (`AlertLog`, `LK_AlertThreshold`).
-  Scheduled scanning (above) is the trigger this will hang off.
 - **Reports / richer visualisation** on top of the scan data.
+- **Data export / import** (CSV/JSON of targets + history).
+- **Webhook / Slack notifications** as an alternative to email.
 
 ## Known caveats
 
@@ -63,3 +72,8 @@ namespaces, no framework). See `architecture.md`.
   a Linux deploy is on the table.)
 - Two unused tables (`Example`, `Upload`) remain from the starter; harmless, kept
   to avoid rewriting migration history.
+- **The SSL check does not verify the chain** (`verify_peer => false` in
+  `CertificateChecker`) — it deliberately reads the cert even if invalid, so it can
+  detect expiry on any cert. Consequence: self-signed / wrong-host / untrusted-root
+  certs still read as **healthy** (only expiry + reachability are judged). A genuine
+  `failed` status comes from a connection/handshake error, not an invalid cert.

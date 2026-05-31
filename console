@@ -156,6 +156,12 @@ function monitorRun(array $flags = []): void
     }
     $failed = $total - $ok;
 
+    // Alerts fire ONLY from the scheduled run (here), never from the dashboard
+    // scan. AlertDispatcher emails verified users on expiry tiers + new failures.
+    $alertsSent = ($results !== [] && config('alerts_enabled', true))
+        ? (new AlertDispatcher())->dispatch($results)
+        : 0;
+
     db()->insert('MonitorRun', [
         'StartedAt'    => $startedAt,
         'Mode'         => $mode,
@@ -166,7 +172,8 @@ function monitorRun(array $flags = []): void
         'DurationMs'   => (int) round((microtime(true) - $t0) * 1000),
     ]);
 
-    echo "Checked {$total} target(s): {$ok} ok, {$failed} failed." . PHP_EOL;
+    $alertNote = $alertsSent > 0 ? " Sent {$alertsSent} alert(s)." : '';
+    echo "Checked {$total} target(s): {$ok} ok, {$failed} failed.{$alertNote}" . PHP_EOL;
 }
 
 function dropAllTables(): void

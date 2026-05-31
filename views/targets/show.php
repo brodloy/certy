@@ -38,14 +38,19 @@ $status = monitor_status($isOk, $days);
 <?php else: ?>
     <div class="table-card">
         <table class="table">
-            <thead><tr><th>Checked</th><th>Result</th><th>Expires</th><th>Days left</th><th>Detail</th></tr></thead>
+            <thead><tr><th>Checked</th><th>Status</th><th>Expires</th><th>Days left</th><th>Detail</th></tr></thead>
             <tbody>
-            <?php foreach ($history as $h): ?>
+            <?php foreach ($history as $h):
+                // Derive each row's status the same way as the dashboard, so an
+                // expired-but-readable cert reads "expired", not a green "ok".
+                $hStatus = monitor_status(
+                    (int) $h['IsOk'],
+                    $h['DaysLeft'] === null ? null : (int) $h['DaysLeft'],
+                );
+            ?>
                 <tr>
                     <td style="font-family:var(--font-mono);font-size:.82rem;"><?= e(format_date($h['CheckedAt'])) ?></td>
-                    <td><?= ((int) $h['IsOk'] === 1)
-                        ? '<span class="badge-soft is-healthy">ok</span>'
-                        : '<span class="badge-soft is-critical">failed</span>' ?></td>
+                    <td><?= status_badge($hStatus) ?></td>
                     <td><?= $h['ExpiresAt'] ? e(format_date($h['ExpiresAt'], 'M j, Y')) : '<span class="text-faint">—</span>' ?></td>
                     <td class="days-left"><?= $h['DaysLeft'] === null ? '<span class="text-faint">—</span>' : e((string) (int) $h['DaysLeft']) ?></td>
                     <td class="text-faint" style="font-size:.82rem;">

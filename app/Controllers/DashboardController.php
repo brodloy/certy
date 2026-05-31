@@ -62,6 +62,26 @@ class DashboardController
             return true;
         }));
 
+        // Order the visible rows by severity (worst first) rather than raw days,
+        // so problems surface at the top: expired, then failed (can't reach the
+        // host), then critical, warning, healthy, and never-checked last. Within
+        // a tier, fewest days left first. Ranking reuses monitor_status() so it
+        // always tracks the status thresholds.
+        $rank = ['expired' => 0, 'failed' => 1, 'critical' => 2, 'warning' => 3, 'healthy' => 4, 'unknown' => 5];
+        usort($rows, function ($a, $b) use ($rank) {
+            $statusOf = fn ($r) => monitor_status(
+                $r['LastIsOk'] === null ? null : (int) $r['LastIsOk'],
+                $r['LastDaysLeft'] === null ? null : (int) $r['LastDaysLeft'],
+            );
+            $cmp = $rank[$statusOf($a)] <=> $rank[$statusOf($b)];
+            if ($cmp !== 0) {
+                return $cmp;
+            }
+            $da = $a['LastDaysLeft'] === null ? PHP_INT_MAX : (int) $a['LastDaysLeft'];
+            $db = $b['LastDaysLeft'] === null ? PHP_INT_MAX : (int) $b['LastDaysLeft'];
+            return $da <=> $db;
+        });
+
         return view('dashboard', [
             'title'   => 'Dashboard',
             'user'    => $user,

@@ -81,7 +81,14 @@ Index `(FK_MonitoredTargetID, CheckedAt)` serves both "latest per target" and th
 history timeline. **No stored status** — urgency is derived at render time (see
 `monitor_status()` in `conventions`), so it can never go stale.
 
-### `AlertLog` — dedup ledger (for the deferred alerting feature)
+### `AlertLog` — dedup ledger for sent alerts
+
+Written + read by `AlertDispatcher` (from `monitor:run`). A row records that an
+alert was sent for a target. Expiry alerts key on
+`(target, type=expiry, threshold, ExpiresAtSnapshot)` — `alreadySent()` checks
+that tuple, so each tier fires once per certificate cycle and re-arms when the
+expiry moves forward (a renewal). Failure alerts store null threshold + null
+snapshot; they're deduped by the ok→failed transition, not this table.
 
 | Column | Type | Notes |
 |---|---|---|

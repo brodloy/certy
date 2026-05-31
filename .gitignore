@@ -3,6 +3,7 @@
 
 # Logs and uploaded files
 /storage/logs/*.log
+/storage/logs/emails/
 /storage/uploads/*
 !/storage/uploads/.gitkeep
 

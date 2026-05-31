@@ -18,7 +18,13 @@ php console monitor:run --due     # check only targets DUE per scan_interval_min
 been checked or its `LastCheckedAt` is older than `scan_interval_minutes`
 (`config.php`, default **720 = 12h**). So you can fire the task often without
 re-scanning fresh targets. Both modes share the exact data path as the dashboard
-"Scan all" button (`MonitorService`), and **send no alerts** (a future feature).
+"Scan all" button (`MonitorService`).
+
+**Alerts fire here.** After the checks run, `monitor:run` calls `AlertDispatcher`,
+which emails verified owners on each expiry tier (30/14/7/1 days) and once when a
+target transitions into a failed check. The dashboard "Scan all" deliberately does
+**not** alert (you're watching the screen). Set `alerts_enabled => false` in
+`config.php` to silence all alerting; the run summary reports how many were sent.
 
 It prints a one-line summary and exits **non-zero on failure**, so a scheduler can
 detect a broken run:

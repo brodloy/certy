@@ -361,23 +361,54 @@ function log_message(string $level, string $message): void
 // ---- Email (no dependency) ------------------------------------------------
 
 /**
- * Send an email. Locally (mail_driver = 'log') it just writes the message to
- * storage/logs/mail.log so you can copy links out without any SMTP setup.
- * In production (mail_driver = 'mail') it uses PHP's built-in mail().
+ * Send an email. Pass $html for a rich message — it's sent as multipart/
+ * alternative (HTML + the plain-text fallback in $text); omit it for a plain
+ * text-only mail (the existing verification/reset callers).
+ *
+ * Locally (mail_driver = 'log') it writes the text part to storage/logs/mail.log
+ * so you can copy links out without any SMTP setup. In production
+ * (mail_driver = 'mail') it uses PHP's built-in mail().
  */
-function send_mail(string $to, string $subject, string $body): void
+function send_mail(string $to, string $subject, string $text, ?string $html = null): void
 {
     if (config('mail_driver') === 'log') {
+        // Also drop the HTML body to a file you can open in a browser, so the
+        // local 'log' driver lets you preview the real rendered email.
+        $htmlNote = '';
+        if ($html !== null) {
+            $dir = BASE_PATH . '/storage/logs/emails';
+            if (!is_dir($dir)) {
+                @mkdir($dir, 0775, true);
+            }
+            $file = $dir . '/' . gmdate('Ymd-His') . '-' . substr(md5($to . $subject . microtime()), 0, 6) . '.html';
+            @file_put_contents($file, $html);
+            $htmlNote = 'HTML: ' . str_replace(BASE_PATH, '', $file) . PHP_EOL;
+        }
         $entry = str_repeat('=', 60) . PHP_EOL
             . 'To: ' . $to . PHP_EOL
-            . 'Subject: ' . $subject . PHP_EOL . PHP_EOL
-            . $body . PHP_EOL;
+            . 'Subject: ' . $subject . PHP_EOL
+            . $htmlNote . PHP_EOL
+            . $text . PHP_EOL;
         file_put_contents(BASE_PATH . '/storage/logs/mail.log', $entry, FILE_APPEND | LOCK_EX);
         return;
     }
 
-    $headers = 'From: ' . config('mail_from') . "\r\n"
-        . "Content-Type: text/plain; charset=UTF-8\r\n";
+    $from = 'From: ' . config('mail_from') . "\r\n" . "MIME-Version: 1.0\r\n";
+
+    if ($html === null) {
+        mail($to, $subject, $text, $from . "Content-Type: text/plain; charset=UTF-8\r\n");
+        return;
+    }
+
+    // multipart/alternative — clients pick HTML, fall back to text.
+    $boundary = '=_certy_' . bin2hex(random_bytes(12));
+    $headers  = $from . 'Content-Type: multipart/alternative; boundary="' . $boundary . "\"\r\n";
+    $eol  = "\r\n";
+    $body = '--' . $boundary . $eol
+        . 'Content-Type: text/plain; charset=UTF-8' . $eol . $eol . $text . $eol . $eol
+        . '--' . $boundary . $eol
+        . 'Content-Type: text/html; charset=UTF-8' . $eol . $eol . $html . $eol . $eol
+        . '--' . $boundary . '--' . $eol;
     mail($to, $subject, $body, $headers);
 }
 

@@ -45,6 +45,9 @@ certy/
 ├─ database/
 │  ├─ migrations/           ← numbered .sql files, run in order
 │  └─ seed.sql              ← demo users + demo targets
+├─ storage/
+│  ├─ logs/                 ← app.log, mail.log (gitignored)
+│  └─ cache/favicons/       ← server-side favicon proxy cache (gitignored)
 ├─ docs/                     ← THIS folder
 ├─ routes.php
 ├─ bootstrap.php
@@ -69,11 +72,15 @@ The scanning feature deliberately separates concerns:
 - **`MonitorService`** (`app/Services/`): the ONE place scans are generated. Loads
   targets, runs the right checker, persists a `CheckResult` row, and updates the
   denormalised `Last*` snapshot on `MonitoredTarget`. Does NOT send alerts.
+- **`AlertDispatcher`** (`app/Services/`): turns scan results into emails — expiry
+  tiers + new-failure alerts, deduped via `AlertLog`. Called ONLY by `monitor:run`
+  (the scheduled trigger), never by the dashboard scan endpoint.
 - **Controllers**: read/write via `db()`, render views. The scan endpoint
-  (`POST /targets/check`, all-or-one) is the only thing that calls `MonitorService`.
+  (`POST /targets/check`, all-or-one) is the only thing that calls `MonitorService`
+  from the web — and it never alerts (the user is watching the screen).
 
-This separation is why "Scan" and "Scan all" share identical code, and why a
-future scheduled trigger is just another caller of `MonitorService`.
+This separation is why "Scan" and "Scan all" share identical code, and why the
+scheduled trigger is just `MonitorService` + `AlertDispatcher`.
 
 ## Adding things
 
