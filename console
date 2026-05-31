@@ -26,7 +26,10 @@ try {
         'db:install' => install(in_array('--fresh', $flags, true)),
         'db:seed'    => seed(),
         'db:cleanup' => cleanup(),
-        'monitor:run' => monitorRun($flags),
+        'monitor:run'     => monitorRun($flags),
+        'monitor:enqueue' => monitorEnqueue($flags),
+        'monitor:work'    => monitorWork($flags),
+        'monitor:queue'   => monitorQueue(),
         default      => help(),
     };
 } catch (Throwable $e) {
@@ -95,7 +98,8 @@ function cleanup(): void
     db()->run('DELETE FROM `EmailVerification` WHERE `ExpiresAt` < ?', [$now]);
     db()->run('DELETE FROM `RememberToken` WHERE `ExpiresAt` < ?', [$now]);
     db()->run('DELETE FROM `LoginAttempt` WHERE `CreatedAt` < ?', [$old]);
-    echo "Cleaned up expired tokens and old login attempts." . PHP_EOL;
+    db()->run("DELETE FROM `ScanJob` WHERE `Status` = 'failed' AND `CreatedAt` < ?", [$old]);
+    echo "Cleaned up expired tokens, old login attempts, and dead scan jobs." . PHP_EOL;
 }
 
 function monitorRun(array $flags = []): void
@@ -177,6 +181,135 @@ function monitorRun(array $flags = []): void
     echo "Checked {$total} target(s): {$ok} ok, {$failed} failed.{$alertNote}" . PHP_EOL;
 }
 
+// --- Scalable scanning: queue + workers (see docs/scheduling.md) ------------
+// monitor:run is the simple all-in-one for small scale. At scale, split it:
+//   monitor:enqueue --due   (fast) finds due targets and queues them
+//   monitor:work            run MANY of these in parallel; each claims a batch
+// Concurrency = number of monitor:work processes. Each worker is sequential
+// internally but they don't collide (atomic claim-by-token).
+
+/** Pull a single `--name=value` flag, or a default. */
+function flagValue(array $flags, string $name, string $default): string
+{
+    foreach ($flags as $f) {
+        if (str_starts_with($f, $name . '=')) {
+            return substr($f, strlen($name) + 1);
+        }
+    }
+    return $default;
+}
+
+/** monitor:enqueue [--due] — queue active (or due) targets not already queued. */
+function monitorEnqueue(array $flags): void
+{
+    $now    = gmdate('Y-m-d H:i:s');
+    $due    = in_array('--due', $flags, true);
+    $where  = 't.`IsActive` = 1';
+    $params = [$now];
+
+    if ($due) {
+        $intervalMin = max(1, (int) config('scan_interval_minutes', 720));
+        $where  .= ' AND (t.`LastCheckedAt` IS NULL OR t.`LastCheckedAt` < ?)';
+        $params[] = gmdate('Y-m-d H:i:s', time() - $intervalMin * 60);
+    }
+
+    // One statement enqueues every eligible target that isn't already queued.
+    $stmt = db()->run(
+        "INSERT INTO `ScanJob` (`FK_MonitoredTargetID`, `Status`, `CreatedAt`)
+         SELECT t.`PK_MonitoredTargetID`, 'pending', ?
+           FROM `MonitoredTarget` t
+          WHERE {$where}
+            AND NOT EXISTS (
+                SELECT 1 FROM `ScanJob` j
+                 WHERE j.`FK_MonitoredTargetID` = t.`PK_MonitoredTargetID`
+                   AND j.`Status` IN ('pending', 'running')
+            )",
+        $params,
+    );
+
+    echo 'Enqueued ' . $stmt->rowCount() . ' target(s)' . ($due ? ' (due mode)' : '') . '.' . PHP_EOL;
+}
+
+/**
+ * monitor:work [--batch=N] [--max=N] [--seconds=N] — claim + run queued jobs.
+ * Runs until the queue is empty (or the caps are hit), then exits — so it's safe
+ * to schedule frequently, and safe to run many copies at once.
+ */
+function monitorWork(array $flags): void
+{
+    $batch    = max(1, (int) flagValue($flags, '--batch', '10'));
+    $maxJobs  = max(1, (int) flagValue($flags, '--max', '500'));
+    $maxSecs  = max(1, (int) flagValue($flags, '--seconds', '50'));
+    $worker   = bin2hex(random_bytes(8));               // unique claim token
+    $t0       = microtime(true);
+
+    // Park poison jobs (repeatedly failed) so they stop being reclaimed.
+    db()->run(
+        "UPDATE `ScanJob` SET `Status` = 'failed'
+          WHERE `Status` = 'running' AND `Attempts` >= 5 AND `ClaimedAt` < ?",
+        [gmdate('Y-m-d H:i:s', time() - 300)],
+    );
+
+    $svc = new MonitorService();
+    $processed = 0; $ok = 0; $failed = 0; $alerts = 0;
+
+    while ($processed < $maxJobs && (microtime(true) - $t0) < $maxSecs) {
+        $lim   = (int) min($batch, $maxJobs - $processed);
+        $stale = gmdate('Y-m-d H:i:s', time() - 300); // reclaim jobs stuck >5 min
+
+        // Atomic claim: stamp our token on up to $lim pending (or stale) jobs.
+        db()->run(
+            "UPDATE `ScanJob`
+                SET `Status` = 'running', `ClaimedBy` = ?, `ClaimedAt` = ?, `Attempts` = `Attempts` + 1
+              WHERE (`Status` = 'pending' OR (`Status` = 'running' AND `ClaimedAt` < ?))
+                AND `Attempts` < 5
+              ORDER BY `PK_ScanJobID`
+              LIMIT {$lim}",
+            [$worker, gmdate('Y-m-d H:i:s'), $stale],
+        );
+
+        $jobs = db()->all(
+            "SELECT `FK_MonitoredTargetID` FROM `ScanJob` WHERE `ClaimedBy` = ? AND `Status` = 'running'",
+            [$worker],
+        );
+        if ($jobs === []) {
+            break; // nothing left to do
+        }
+
+        try {
+            $ids     = array_map(static fn ($j): int => (int) $j['FK_MonitoredTargetID'], $jobs);
+            $results = $svc->runChecks($ids);
+            foreach ($results as $r) {
+                $processed++;
+                empty($r['ok']) ? $failed++ : $ok++;
+            }
+            if (config('alerts_enabled', true) && $results !== []) {
+                $alerts += (new AlertDispatcher())->dispatch($results);
+            }
+            db()->run("DELETE FROM `ScanJob` WHERE `ClaimedBy` = ? AND `Status` = 'running'", [$worker]);
+        } catch (Throwable $e) {
+            // Leave the claimed jobs to be reclaimed when they go stale; keep going.
+            fwrite(STDERR, "batch error: {$e->getMessage()}" . PHP_EOL);
+            break;
+        }
+    }
+
+    $ms = (int) round((microtime(true) - $t0) * 1000);
+    $alertNote = $alerts > 0 ? " Sent {$alerts} alert(s)." : '';
+    echo "Worker {$worker}: processed {$processed} ({$ok} ok, {$failed} failed) in {$ms}ms.{$alertNote}" . PHP_EOL;
+}
+
+/** monitor:queue — quick queue depth (pending / running / failed). */
+function monitorQueue(): void
+{
+    $r = db()->first(
+        "SELECT SUM(`Status` = 'pending') AS p, SUM(`Status` = 'running') AS r, SUM(`Status` = 'failed') AS f
+           FROM `ScanJob`",
+    );
+    printf("Queue — pending: %d, running: %d, failed: %d" . PHP_EOL,
+        (int) ($r['p'] ?? 0), (int) ($r['r'] ?? 0), (int) ($r['f'] ?? 0));
+}
+
 function dropAllTables(): void
 {
     db()->run('SET FOREIGN_KEY_CHECKS = 0');
@@ -199,6 +332,11 @@ function help(): void
       db:cleanup          prune expired tokens + old login attempts (good for cron)
       monitor:run         run checks now on ALL active targets (manual/full run)
       monitor:run --due   check only targets due per scan_interval_minutes (good for cron)
+
+      monitor:enqueue [--due]   queue targets for the worker pool (scales out)
+      monitor:work [--batch=N] [--max=N] [--seconds=N]
+                                claim + run queued jobs; run MANY in parallel
+      monitor:queue             show queue depth (pending / running / failed)
 
     TXT;
 }

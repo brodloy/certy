@@ -69,8 +69,17 @@ php console db:migrate          # run any new migrations
 php console db:install          # migrate, then load demo data
 php console db:install --fresh  # DROP all tables, then migrate + seed (DEV ONLY)
 php console db:seed             # load demo data
-php console db:cleanup          # prune expired tokens + old login attempts
+php console db:cleanup          # prune expired tokens, old login attempts, dead jobs
 php console monitor:run [--due] # run checks (all active, or only those due)
+```
+
+To **scale the scanner**, split discovery from execution with the built-in queue
+and run workers in parallel (see [docs/scheduling.md](docs/scheduling.md)):
+
+```bash
+php console monitor:enqueue [--due]   # queue targets for the worker pool
+php console monitor:work              # claim + run queued jobs (run MANY at once)
+php console monitor:queue             # pending / running / failed depth
 ```
 
 On Windows, use the full MAMP CLI path, e.g.

@@ -97,5 +97,10 @@ scheduled trigger is just `MonitorService` + `AlertDispatcher`.
 — the scheduled-scan entry point, see `scheduling.md`). On Windows use the full
 MAMP PHP path, e.g. `C:\MAMP\bin\php\php8.3.1\php.exe console db:install`.
 
+For scale, the same scan work can be split across processes via the `ScanJob`
+queue: `monitor:enqueue` (queue due targets) + many concurrent `monitor:work`
+(claim + run). Same `MonitorService` + `AlertDispatcher` underneath — only the
+trigger changes. See `scheduling.md`.
+
 > The CLI PHP needs `openssl` enabled for SSL checks (MAMP's CLI build disables it
 > by default — separate `php.ini` from Apache's). See `scheduling.md`.

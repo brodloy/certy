@@ -6,18 +6,20 @@
  */
 ?>
 <!doctype html>
-<html lang="en">
+<?php /* An explicit theme choice is a first-party cookie, rendered here so it persists across pages/refresh with no JS. */ ?>
+<html lang="en"<?php $__theme = $_COOKIE['certy-theme'] ?? ''; if ($__theme === 'dark' || $__theme === 'light') { echo ' data-bs-theme="' . $__theme . '"'; } ?>>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <?php /* Apply the saved theme (or OS preference) BEFORE first paint — no flash. */ ?>
+    <?php /* No explicit choice yet? Honour the OS preference before first paint. */ ?>
     <script>
         (function () {
+            var el = document.documentElement;
+            if (el.getAttribute('data-bs-theme')) return; // explicit choice already rendered server-side
             try {
-                var saved = localStorage.getItem('certy-theme');
-                var dark = saved ? saved === 'dark'
-                    : window.matchMedia('(prefers-color-scheme: dark)').matches;
-                document.documentElement.setAttribute('data-bs-theme', dark ? 'dark' : 'light');
+                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    el.setAttribute('data-bs-theme', 'dark');
+                }
             } catch (e) {}
         })();
     </script>

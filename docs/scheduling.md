@@ -110,6 +110,35 @@ Use the path to a PHP CLI binary that has `openssl` (on Linux it's standard).
 - **Safe to run often and overlapping.** A run that finds nothing due exits
   immediately; a run that re-scans a fresh target just writes another history row.
 
+## Scaling out: queue + workers
+
+`monitor:run` checks every due target **sequentially in one process** — fine for
+modest numbers, but wall-clock grows with the target count. To scale, split
+*discovery* from *execution* with the built-in DB-backed queue (`ScanJob`):
+
+```
+php console monitor:enqueue --due   # fast: finds due targets, queues them
+php console monitor:work            # claims a batch and runs it; exits when drained
+php console monitor:queue           # pending / running / failed depth
+```
+
+Throughput = **number of `monitor:work` processes**. Each worker is sequential
+internally but they don't collide — jobs are claimed atomically by a per-worker
+token (safe on MySQL 5.7+, no `SKIP LOCKED` needed). So you scale by running more
+workers, on more cores or more machines, all pointed at the same database.
+
+**Scheduling it:** run `monitor:enqueue --due` on a timer (e.g. every few minutes),
+and run several `monitor:work` frequently (each exits when the queue is empty, so
+it's safe to fire often and to overlap). Flags: `--batch=N` (jobs per claim),
+`--max=N` (jobs per invocation), `--seconds=N` (max runtime) bound each worker so
+a cron-launched worker returns promptly.
+
+`monitor:work` does everything `monitor:run` does per target — writes a
+`CheckResult`, refreshes the `Last*` snapshot, and fires alerts via
+`AlertDispatcher` — just spread across workers. `monitor:run` stays as the simple
+all-in-one for small deployments. (Completed jobs are deleted; `db:cleanup` prunes
+any parked `failed` ones.)
+
 ## Caveats
 
 - **WHOIS / port 43.** Domain checks make an outbound connection on **port 43**.

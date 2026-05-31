@@ -37,7 +37,9 @@ namespaces, no framework). See `architecture.md`.
 - **Scheduled scanning**: `php console monitor:run [--due]` runs checks unattended
   on a timer (Task Scheduler / cron), `--due` honouring `scan_interval_minutes`.
   Same data path as manual scans. Each run is recorded to `MonitorRun`, and the
-  run is what fires email alerts (below). See `scheduling.md`.
+  run is what fires email alerts (below). For scale, a DB-backed queue
+  (`monitor:enqueue` + concurrent `monitor:work`) spreads the same work across
+  many worker processes. See `scheduling.md`.
 - **Email alerts**: `AlertDispatcher` (run only by `monitor:run`, never the
   dashboard scan) emails the target's owner — **HTML + plain-text** — on each
   expiry tier (`LK_AlertThreshold`: 30/14/7/1 days) and once when a check

@@ -118,6 +118,29 @@ Not tied to a target — no foreign key, pure append-only.
 A "nothing due" run is still recorded (`CheckedCount = 0`) — its presence is the
 proof the run happened. Index on `StartedAt` for "recent runs" reads.
 
+### `ScanJob` — work queue for the scalable scanner
+
+A DB-backed queue that decouples scan **discovery** from **execution** so the
+scanner scales out (see `scheduling.md`). `monitor:enqueue` inserts due targets;
+many `monitor:work` processes claim batches concurrently and run them.
+
+| Column | Type | Notes |
+|---|---|---|
+| `PK_ScanJobID` | INT UNSIGNED PK AI | |
+| `FK_MonitoredTargetID` | INT UNSIGNED | → `MonitoredTarget`, cascade |
+| `Status` | VARCHAR(10) | `pending` / `running` / `failed` |
+| `ClaimedBy` | VARCHAR(40) NULL | the worker token that owns a `running` row |
+| `ClaimedAt` | DATETIME NULL | when claimed (stale `running` rows are reclaimable) |
+| `Attempts` | TINYINT UNSIGNED | retry counter; ≥5 parks the job as `failed` |
+| `CreatedAt` | DATETIME | UTC |
+
+Concurrency is safe **without `SKIP LOCKED`** (works on MySQL 5.7+): a worker
+stamps its unique `ClaimedBy` token via `UPDATE … ORDER BY … LIMIT`, then SELECTs
+the rows carrying its token — InnoDB row locks serialise the UPDATE so no row is
+claimed twice. Completed jobs are **DELETED** (this is a queue, not a log —
+`CheckResult`/`MonitorRun` are the history). `db:cleanup` prunes parked `failed`
+jobs.
+
 ## Starter tables (inherited, not certy-specific)
 
 `User`, `PasswordReset`, `LoginAttempt`, `EmailVerification`, `RememberToken`,
