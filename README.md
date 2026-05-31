@@ -4,7 +4,7 @@ A hosted, multi-tenant **SSL certificate & domain expiry monitor**. Users sign
 up, add the hosts and domains they care about (up to 10 each), and certy.io
 checks them **from the outside** — reading each certificate over a raw TLS
 handshake and each domain's registration over raw WHOIS (port 43) — then surfaces
-a colour-coded dashboard. Tiered email alerts are the next phase.
+a colour-coded dashboard.
 
 Built on a deliberately small, **no-dependency PHP 8** base: no Composer, no
 namespaces, no framework. One front controller, a tiny router, plain-PHP views,
@@ -41,18 +41,17 @@ Password reset and email verification need no mail setup locally — the message
 > CLI scanner, `openssl` must be enabled in MAMP's *command-line* PHP too — see
 > [docs/scheduling.md](docs/scheduling.md).
 
-## What works today
+## Features
 
-Email/password auth (argon2id, rate-limited, remember-me, verification, reset) ·
-optional Google & GitHub sign-in (off by default) · per-user targets capped at 10
-with active/paused toggle · colour-coded dashboard + KPI tally · on-demand "Scan"
-and "Scan all" (live, no reload) · flat scans history and per-target timeline ·
-**scheduled scanning** via `php console monitor:run --due` (Task Scheduler / cron).
-Each user only ever sees their own targets.
-
-**Next phase:** tiered email alerts (`AlertDispatcher`, 30/14/7/1-day thresholds).
-The database is already shaped for it (`AlertLog`, `LK_AlertThreshold`), and the
-scheduled scanner is the trigger it will hang off.
+- Email/password auth — argon2id hashing, rate-limited, remember-me, email
+  verification, and password reset
+- Optional Google & GitHub sign-in (off by default)
+- Per-user targets capped at 10, with an active/paused toggle
+- Colour-coded dashboard with a KPI tally
+- On-demand **Scan** and **Scan all** (live, no page reload)
+- Flat scans history plus a per-target timeline
+- **Scheduled scanning** via `php console monitor:run --due` (Task Scheduler / cron)
+- Strict per-user isolation — each user only ever sees their own targets
 
 ## The CLI
 
