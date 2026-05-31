@@ -7,6 +7,7 @@
  *   php console db:install --fresh  DROP everything, then migrate + seed  (DEV ONLY)
  *   php console db:seed             load the demo data
  *   php console db:cleanup          prune expired tokens + old login attempts
+ *   php console monitor:run [--due] run checks (all active, or only those due)
  *
  * Migrations are the plain .sql files in database/migrations/, run in filename
  * order. Each one that runs is recorded in a `Migration` table, so db:migrate

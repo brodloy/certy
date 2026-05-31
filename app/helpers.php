@@ -314,7 +314,7 @@ function is_verified(): bool
 
 /**
  * Render simple "‹ 1 2 3 ›" pagination links. $meta is what db()->paginate()
- * returns. $baseUrl is the path without ?page (e.g. '/examples').
+ * returns. $baseUrl is the path without ?page (e.g. '/scans').
  */
 function pagination_links(array $meta, string $baseUrl, array $query = []): string
 {
@@ -379,21 +379,6 @@ function send_mail(string $to, string $subject, string $body): void
     $headers = 'From: ' . config('mail_from') . "\r\n"
         . "Content-Type: text/plain; charset=UTF-8\r\n";
     mail($to, $subject, $body, $headers);
-}
-
-// ---- Misc ------------------------------------------------------------------
-
-/** Human-friendly file size, e.g. 12.3 KB. */
-function human_size(int $bytes): string
-{
-    $units = ['B', 'KB', 'MB', 'GB'];
-    $i = 0;
-    $n = (float) $bytes;
-    while ($n >= 1024 && $i < count($units) - 1) {
-        $n /= 1024;
-        $i++;
-    }
-    return round($n, 1) . ' ' . $units[$i];
 }
 
 // ---- Monitoring status ----------------------------------------------------

@@ -40,7 +40,6 @@ flash('success', 'hi');
 check('flash stored then cleared', (flash_all()['success'] ?? '') === 'hi' && !isset($_SESSION['_flash']));
 
 check('format_date formats UTC', format_date('2026-01-05 14:30:00', 'Y-m-d H:i') === '2026-01-05 14:30');
-check('human_size MB', human_size(5 * 1024 * 1024) === '5 MB');
 check('pager hidden for 1 page', pagination_links(['page' => 1, 'totalPages' => 1], '/x') === '');
 check('pager shows Next', str_contains(pagination_links(['page' => 1, 'totalPages' => 3], '/e'), 'page=2'));
 

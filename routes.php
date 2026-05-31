@@ -4,7 +4,7 @@
  * page. Each line says: for this METHOD + PATH, run this controller method.
  *
  * To add a section "site.com/widgets":
- *   1. add the lines you need here (mirror the /examples block below)
+ *   1. add the lines you need here (mirror the Targets block below)
  *   2. create app/Controllers/WidgetController.php with those methods
  *   3. create views/widgets/*.php
  * That's it.

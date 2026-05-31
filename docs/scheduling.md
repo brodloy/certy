@@ -4,8 +4,8 @@
 > or its flags. Last verified against the code: 2026-05-31.
 
 This is how to run certy.io's checks **unattended on a timer**, instead of only
-when someone clicks "Scan". The work itself is already done by the CLI command
-(see `feature-scheduled-scanning.md`); this doc is operations only.
+when someone clicks "Scan". The work itself is done by the
+`monitor:run` CLI command (see `architecture.md`); this doc is operations only.
 
 ## The command
 

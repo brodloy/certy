@@ -1,7 +1,7 @@
 # CLAUDE.md — certy.io
 
-This file is read automatically at the start of every Claude Code session.
-It tells you how this project works and how I want you to work in it.
+Read automatically at the start of every session. How this project works and how
+I want you to work in it. **Keep it short.**
 
 ## What this project is
 
@@ -9,28 +9,25 @@ certy.io — a hosted, multi-tenant SSL-certificate & domain-expiry monitor, bui
 on a no-dependency PHP 8 starter (no Composer, no namespaces, no framework).
 Runs locally on MAMP (Windows, Apache, MySQL, PHP 8.3).
 
-## Read the docs first
+## The docs
 
-Before starting any task, read the relevant file(s) in `docs/`:
-- `docs/overview.md` — what it is, feature status, caveats
-- `docs/architecture.md` — request flow, conventions, file layout, how to add things
-- `docs/database.md` — full schema, key conventions, status derivation
-- `docs/security.md` — ownership, CSRF, OAuth, the "never break" rules
+`docs/` holds the reference docs — the source of truth for how the app works:
+- `overview.md` — what it is, feature status, caveats
+- `architecture.md` — request flow, conventions, file layout, how to add things
+- `database.md` — schema, conventions, status derivation
+- `security.md` — ownership, CSRF, OAuth, the "never break" rules
+- `scheduling.md` — running the scanner unattended
 
-These docs are the source of truth. **If a task changes how something works,
-update the matching doc in the same task.** A stale doc is worse than none.
+Read the relevant one before a task. **If a change alters how something works,
+update the matching doc in the same change** — a stale doc misleads.
 
-## Working style (important — applies to every session)
+## Working style — keep it simple
 
-1. **Plan features in a doc.** For any non-trivial feature, create
-   `docs/feature-<name>.md` with the full task list broken into phases and a
-   progress tracker. Work one phase at a time.
-2. **Track progress in the doc.** After completing a phase, update its checklist
-   and the "Current status" line in that feature doc — before stopping.
-3. **At the end of each phase, confirm the doc is updated** and summarise what's
-   done + what's next, so the next session can resume cleanly from the doc.
-4. **When resuming**, read the feature doc's progress section first and continue
-   from the next unchecked phase.
+- Most changes need no planning doc: make the change, lint/test it, commit with a
+  clear message. The git history is the record.
+- For a genuinely large, multi-session feature you may jot a short scratch plan,
+  but it's optional and not a process to maintain. Don't add phase trackers.
+- The only standing doc obligation is the one above: keep `docs/` honest.
 
 ## Code conventions (see docs/architecture.md for detail)
 
@@ -45,10 +42,8 @@ update the matching doc in the same task.** A stale doc is worse than none.
 ## Verifying work
 
 - Lint PHP (`php -l`) and JS (`node --check`) before considering a task done.
-- The sandbox can run MariaDB for functional tests; on the user's machine it's
-  MAMP MySQL on port 3306, DB name `certy`, user/pass root/root.
-- Don't trust live TLS/WHOIS values in a sandbox — verify checker *logic* with
-  fixtures; trust real values only on the user's machine.
+- DB is MAMP MySQL on port 3306, name `certy`, user/pass root/root.
+- The CLI PHP needs `openssl` enabled for SSL checks (see docs/scheduling.md).
 
 ## Don't
 
