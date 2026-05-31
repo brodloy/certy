@@ -65,6 +65,7 @@ $router->post('/settings/disconnect', [SettingsController::class, 'disconnect'])
 $router->post('/settings/delete',     [SettingsController::class, 'deleteAccount']);
 
 // --- Admin (admin role only) -----------------------------------------------
-$router->get('/admin',           [AdminController::class, 'index']);
-$router->get('/admin/export',    [AdminController::class, 'exportRuns']);
-$router->get('/admin/users',     [AdminController::class, 'users']);
+$router->get('/admin',                   [AdminController::class, 'index']);
+$router->get('/admin/export',            [AdminController::class, 'exportRuns']);
+$router->get('/admin/users',             [AdminController::class, 'users']);
+$router->post('/admin/users/{id}/toggle', [AdminController::class, 'toggleActive']);

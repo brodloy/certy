@@ -57,8 +57,9 @@ namespaces, no framework). See `architecture.md`.
   connected accounts (link/unlink Google/GitHub), delete account.
 - **Admin** (admin role only): a system-wide overview at `/admin` — user/target
   totals, system health tally, and scanner activity (last scheduled + manual
-  `monitor:run`, recent run history) — plus the user list at `/admin/users`.
-  Admins land here instead of the user dashboard.
+  `monitor:run`, recent run history) — plus the user list at `/admin/users`,
+  where admins can **enable/disable** accounts (a disabled user is refused at
+  login and bounced mid-session). Admins land here instead of the user dashboard.
 
 - **Data export (CSV)**: the dashboard exports all your targets + current status;
   a target's detail page exports its full check history; the admin page exports

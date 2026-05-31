@@ -74,6 +74,10 @@ and 404 on a miss. No exceptions.
 - Session-based auth; `require_login()` gates every signed-in page and bounces
   guests to `/login`. `require_admin()` gates admin pages.
 - Session id is regenerated on login (prevents fixation).
+- **Disabled accounts** (`User.Active = 0`, toggled by admins at `/admin/users`)
+  are refused at login (password *and* OAuth) and bounced **mid-session** —
+  `Auth::user()` re-checks `Active` on every request and logs them out, and their
+  remember-me tokens are dropped on disable. Admins can't disable themselves.
 - Remember-me uses a hashed token in `RememberToken`, not the password.
 - Response headers (set in `public/index.php`): `X-Frame-Options`, nosniff,
   a referrer policy, and a CSP whose `img-src` is `'self' data:` only.

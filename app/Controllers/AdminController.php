@@ -113,4 +113,39 @@ class AdminController
             'result' => $result,
         ], 'app');
     }
+
+    /**
+     * POST /admin/users/{id}/toggle — enable/disable a user's account. A
+     * disabled account is refused at login and bounced mid-session (Auth
+     * re-checks `Active` every request), and its remember-me tokens are dropped.
+     * Admins can't disable themselves (that would lock them out instantly).
+     */
+    public function toggleActive(string $id): string
+    {
+        require_admin();
+        $uid = (int) $id;
+
+        if ($uid === (int) current_user()['PK_UserID']) {
+            return redirect_with('/admin/users', 'error', "You can't disable your own account.");
+        }
+
+        $user = db()->first('SELECT `PK_UserID`, `Name`, `Active` FROM `User` WHERE `PK_UserID` = ?', [$uid]);
+        if ($user === null) {
+            return redirect_with('/admin/users', 'error', 'User not found.');
+        }
+
+        $next = (int) $user['Active'] === 1 ? 0 : 1;
+        db()->run(
+            'UPDATE `User` SET `Active` = ?, `UpdatedAt` = ? WHERE `PK_UserID` = ?',
+            [$next, gmdate('Y-m-d H:i:s'), $uid],
+        );
+
+        if ($next === 0) {
+            // Kill any remember-me cookies so the disable takes effect immediately.
+            db()->run('DELETE FROM `RememberToken` WHERE `FK_UserID` = ?', [$uid]);
+        }
+
+        return redirect_with('/admin/users', 'success',
+            $user['Name'] . ' ' . ($next === 1 ? 'enabled' : 'disabled') . '.');
+    }
 }
