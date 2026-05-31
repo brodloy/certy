@@ -68,7 +68,9 @@
             ?>
                 <tr data-row="<?= e((string) $id) ?>">
                     <td>
-                        <a class="host" href="<?= e(url('/targets/' . $id)) ?>"><?= e($r['Host']) ?></a>
+                        <a class="host d-inline-flex align-items-center gap-2" href="<?= e(url('/targets/' . $id)) ?>">
+                            <?= favicon_img($r['Host']) ?><?= e($r['Host']) ?>
+                        </a>
                         <?php if (!empty($r['Label'])): ?>
                             <div class="text-faint" style="font-size:.78rem;"><?= e($r['Label']) ?></div>
                         <?php endif; ?>

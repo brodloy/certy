@@ -429,3 +429,27 @@ function status_badge(string $status): string
     return '<span class="badge-soft is-' . e($status) . '">'
         . e(strtolower(monitor_status_label($status))) . '</span>';
 }
+
+// ---- Favicons -------------------------------------------------------------
+
+/**
+ * URL for a host's favicon. Points at our OWN same-origin proxy
+ * (FaviconController), which fetches + caches the icon server-side. Same-origin
+ * means privacy blockers (Brave/uBlock) don't block it and the user's browser
+ * never talks to a third party. The source service lives in that controller.
+ */
+function favicon_url(string $host, int $size = 32): string
+{
+    return url('/favicon?host=' . rawurlencode($host) . '&sz=' . $size);
+}
+
+/**
+ * A small favicon <img> for a target's host. Decorative, so alt="" and it's
+ * hidden if the icon fails to load (so a broken-image glyph never shows).
+ */
+function favicon_img(string $host, int $size = 16): string
+{
+    return '<img class="favicon" src="' . e(favicon_url($host, $size * 2)) . '"'
+        . ' width="' . $size . '" height="' . $size . '" alt="" loading="lazy"'
+        . ' onerror="this.style.display=\'none\'">';
+}

@@ -8,7 +8,9 @@ $status = monitor_status($isOk, $days);
 
 <div class="d-flex align-items-center justify-content-between mb-4">
     <div>
-        <h1 class="mb-1" style="font-family:var(--font-mono);font-size:1.6rem;"><?= e($target['Host']) ?></h1>
+        <h1 class="mb-1 d-flex align-items-center gap-2" style="font-family:var(--font-mono);font-size:1.6rem;">
+            <?= favicon_img($target['Host'], 24) ?><?= e($target['Host']) ?>
+        </h1>
         <p class="text-muted-2 mb-0">
             <?= e($target['TypeLabel']) ?><?= !empty($target['Label']) ? ' · ' . e($target['Label']) : '' ?>
             <?php if ($target['TypeCode'] === 'ssl' && (int) $target['Port'] !== 443): ?> · port <?= e((string) $target['Port']) ?><?php endif; ?>

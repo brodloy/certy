@@ -40,6 +40,9 @@ $router->get('/auth/github/callback', [GitHubAuthController::class, 'callback'])
 // --- Dashboard -------------------------------------------------------------
 $router->get('/dashboard',       [DashboardController::class, 'index']);
 
+// --- Favicon proxy (same-origin; fetches + caches host icons server-side) ---
+$router->get('/favicon',         [FaviconController::class, 'show']);
+
 // --- Targets (the monitored hosts/domains) ---------------------------------
 // NOTE: declare literal '/targets/check' and '/targets/create' BEFORE
 // '/targets/{id}', or the {id} pattern would swallow those words.

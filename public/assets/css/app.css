@@ -337,6 +337,7 @@ code { color: var(--accent-text); background: var(--accent-soft);
     font-weight: 500;
     transition: background 0.14s ease, color 0.14s ease;
 }
+.app-sidebar .nav-icon { flex-shrink: 0; width: 18px; height: 18px; }
 .app-sidebar .nav-item-link:hover { background: var(--bg-tint); color: var(--text); text-decoration: none; }
 .app-sidebar .nav-item-link.active {
     background: var(--accent);
@@ -455,6 +456,7 @@ code { color: var(--accent-text); background: var(--accent-soft);
 .table tbody tr:hover { background: var(--bg-tint); }
 .table .host { font-family: var(--font-mono); font-weight: 500; color: var(--text); }
 .table .days-left { font-family: var(--font-mono); font-weight: 600; }
+.favicon { border-radius: 3px; flex: none; }
 
 /* Wrap a table in .table-card for a framed, elevated look. Tables that are
    wider than the card scroll horizontally inside it (rather than clipping). */

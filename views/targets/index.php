@@ -35,7 +35,9 @@
     ?>
         <div class="list-row">
             <div>
-                <a class="title" href="<?= e(url('/targets/' . $r['PK_MonitoredTargetID'])) ?>"><?= e($r['Host']) ?></a>
+                <a class="title d-inline-flex align-items-center gap-2" href="<?= e(url('/targets/' . $r['PK_MonitoredTargetID'])) ?>">
+                    <?= favicon_img($r['Host']) ?><?= e($r['Host']) ?>
+                </a>
                 <div class="text-faint" style="font-size:.78rem;">
                     <?= e($r['TypeLabel']) ?><?= !empty($r['Label']) ? ' · ' . e($r['Label']) : '' ?>
                 </div>

@@ -75,6 +75,14 @@ and 404 on a miss. No exceptions.
   guests to `/login`. `require_admin()` gates admin pages.
 - Session id is regenerated on login (prevents fixation).
 - Remember-me uses a hashed token in `RememberToken`, not the password.
+- Response headers (set in `public/index.php`): `X-Frame-Options`, nosniff,
+  a referrer policy, and a CSP whose `img-src` is `'self' data:` only.
+- Target favicons are served same-origin by `FaviconController` (`/favicon`),
+  which fetches the icon from Google's S2 service server-side and caches it under
+  `storage/cache/`. This keeps the CSP tight, stops privacy blockers from
+  hiding the icons, and means the user's browser never tells Google which hosts
+  they monitor. The proxy only ever connects to a fixed `www.google.com` URL
+  (the host is a query value, not a connect target), so there's no SSRF surface.
 
 ## 7. Output & input
 

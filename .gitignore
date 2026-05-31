@@ -6,5 +6,8 @@
 /storage/uploads/*
 !/storage/uploads/.gitkeep
 
+# Cached favicons (regenerated on demand)
+/storage/cache/*
+
 # OS / editor junk
 .DS_Store
