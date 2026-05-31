@@ -37,10 +37,10 @@ migrations and queries (a deliberate, separate task).
 | `Label` | VARCHAR(50) | display name |
 Seeded: `1=ssl`, `2=domain`.
 
-**`LK_AlertType`** — kind of alert (for the deferred alerting feature).
+**`LK_AlertType`** — kind of alert (used by `AlertDispatcher`).
 Seeded: `1=expiry`, `2=check_failure`.
 
-**`LK_AlertThreshold`** — day-tiers for expiry warnings (deferred feature).
+**`LK_AlertThreshold`** — day-tiers for expiry warnings (used by `AlertDispatcher`).
 | Column | Type | Notes |
 |---|---|---|
 | `PK_AlertThresholdID` | TINYINT UNSIGNED PK | |

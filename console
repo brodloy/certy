@@ -103,9 +103,10 @@ function monitorRun(array $flags = []): void
     // Scheduled-scan entry point. A thin CLI wrapper over the SAME path the
     // "Scan all" button uses: MonitorService::runChecks() loads active targets
     // across ALL users (a system job, not user-scoped), runs the right checker,
-    // writes a CheckResult row and refreshes the Last* snapshot. Sends no alerts
-    // (that's a future, separate trigger). If the service throws, we let it bubble
-    // to the top-level try/catch, which exits non-zero so a scheduler can detect it.
+    // writes a CheckResult row and refreshes the Last* snapshot. THEN fires email
+    // alerts via AlertDispatcher (only here — never the dashboard scan). If the
+    // service throws, we let it bubble to the top-level try/catch, which exits
+    // non-zero so a scheduler can detect it.
     //
     //   monitor:run         force-check EVERY active target (manual/full run)
     //   monitor:run --due   check only targets not checked within

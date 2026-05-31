@@ -56,7 +56,12 @@ $runPanel = function (?array $run, string $heading, string $empty): string {
 </div>
 
 <!-- Scanner activity -->
-<h3 class="h5 mb-3">Scanner</h3>
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h3 class="h5 mb-0">Scanner</h3>
+    <?php if ($recentRuns !== []): ?>
+        <a class="btn btn-outline-secondary btn-sm" href="<?= e(url('/admin/export')) ?>">Export runs CSV</a>
+    <?php endif; ?>
+</div>
 <div class="row g-3 mb-3">
     <div class="col-md-6"><?= $runPanel($lastDue, 'Last scheduled run (--due)', 'No scheduled runs recorded yet.') ?></div>
     <div class="col-md-6"><?= $runPanel($lastFull, 'Last manual run (full)', 'No manual runs recorded yet.') ?></div>

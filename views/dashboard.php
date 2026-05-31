@@ -20,6 +20,7 @@ $ico = fn (string $body): string =>
     </div>
     <div class="d-flex gap-2">
         <?php if ($count > 0): ?>
+            <a class="btn btn-outline-secondary" href="<?= e(url('/targets/export')) ?>">Export CSV</a>
             <button class="btn btn-outline-secondary" data-check-all>Scan all</button>
         <?php endif; ?>
         <a class="btn btn-primary" href="<?= e(url('/targets/create')) ?>">+ Add target</a>

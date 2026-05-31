@@ -121,6 +121,24 @@ function json(mixed $data, int $status = 200): never
     exit;
 }
 
+/**
+ * Stream a CSV file download and stop. $columns is the header row; $rows is a
+ * list of flat arrays in the same column order. No dependency — fputcsv handles
+ * quoting/escaping.
+ */
+function csv_download(string $filename, array $columns, iterable $rows): never
+{
+    header('Content-Type: text/csv; charset=UTF-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    $out = fopen('php://output', 'w');
+    fputcsv($out, $columns);
+    foreach ($rows as $row) {
+        fputcsv($out, $row);
+    }
+    fclose($out);
+    exit;
+}
+
 /** Stop with an HTTP error and a small page (or JSON for /api paths). */
 function abort(int $status, string $message = ''): never
 {

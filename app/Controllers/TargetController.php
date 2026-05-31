@@ -187,6 +187,66 @@ class TargetController
         return redirect_with('/dashboard', 'success', 'Target deleted.');
     }
 
+    /** GET /targets/export — all this user's targets + current status as CSV. */
+    public function export(): string
+    {
+        require_login();
+
+        $rows = db()->all(
+            'SELECT t.*, lt.`Code` AS `TypeCode`
+               FROM `MonitoredTarget` t
+               JOIN `LK_TargetType` lt ON lt.`PK_TargetTypeID` = t.`FK_TargetTypeID`
+              WHERE t.`FK_UserID` = ?
+              ORDER BY t.`Host`',
+            [current_user()['PK_UserID']],
+        );
+
+        $data = [];
+        foreach ($rows as $r) {
+            $status = monitor_status(
+                $r['LastIsOk'] === null ? null : (int) $r['LastIsOk'],
+                $r['LastDaysLeft'] === null ? null : (int) $r['LastDaysLeft'],
+            );
+            $data[] = [
+                $r['Host'], $r['TypeCode'], $r['Port'], $r['Label'] ?? '', $status,
+                $r['LastExpiresAt'] ?? '', $r['LastDaysLeft'] ?? '', $r['LastCheckedAt'] ?? '',
+            ];
+        }
+
+        csv_download(
+            'certy-targets-' . gmdate('Ymd') . '.csv',
+            ['host', 'type', 'port', 'label', 'status', 'expires_at_utc', 'days_left', 'last_checked_utc'],
+            $data,
+        );
+    }
+
+    /** GET /targets/{id}/export — that target's full check history as CSV. */
+    public function exportHistory(string $id): string
+    {
+        require_login();
+        $target = $this->findOwned((int) $id);
+
+        $rows = db()->all(
+            'SELECT * FROM `CheckResult` WHERE `FK_MonitoredTargetID` = ? ORDER BY `CheckedAt` DESC',
+            [$target['PK_MonitoredTargetID']],
+        );
+
+        $data = [];
+        foreach ($rows as $h) {
+            $data[] = [
+                $h['CheckedAt'], (int) $h['IsOk'], $h['ExpiresAt'] ?? '', $h['DaysLeft'] ?? '',
+                $h['Issuer'] ?? '', $h['Subject'] ?? '', $h['ErrorText'] ?? '',
+            ];
+        }
+
+        $slug = preg_replace('/[^a-z0-9.-]/i', '_', (string) $target['Host']);
+        csv_download(
+            'certy-' . $slug . '-history-' . gmdate('Ymd') . '.csv',
+            ['checked_at_utc', 'is_ok', 'expires_at_utc', 'days_left', 'issuer', 'subject', 'error'],
+            $data,
+        );
+    }
+
     /**
      * POST /targets/check — run checks on demand and return JSON. With ?id=N
      * checks one target; without, checks all of this user's targets. Never

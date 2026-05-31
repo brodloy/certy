@@ -10,7 +10,7 @@ certy is a **hosted, multi-tenant SSL certificate & domain expiry monitor**.
 Users sign up, add the hosts and domains they care about (up to 10 each), and
 certy checks them **from the outside** — reading each certificate over a raw
 TLS handshake, and each domain's registration over raw WHOIS (port 43) — then
-shows a colour-coded dashboard and (planned) emails alerts before anything lapses.
+shows a colour-coded dashboard and emails alerts before anything lapses.
 
 It is built on a small, **no-dependency PHP 8 starter** (no Composer, no
 namespaces, no framework). See `architecture.md`.
@@ -58,9 +58,13 @@ namespaces, no framework). See `architecture.md`.
   `monitor:run`, recent run history) — plus the user list at `/admin/users`.
   Admins land here instead of the user dashboard.
 
+- **Data export (CSV)**: the dashboard exports all your targets + current status;
+  a target's detail page exports its full check history; the admin page exports
+  the `MonitorRun` log. All via the `csv_download()` helper, ownership-scoped.
+
 **Deferred (not built yet):**
 - **Reports / richer visualisation** on top of the scan data.
-- **Data export / import** (CSV/JSON of targets + history).
+- **Data import** (CSV bulk-add of targets).
 - **Webhook / Slack notifications** as an alternative to email.
 
 ## Known caveats

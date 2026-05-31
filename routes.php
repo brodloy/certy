@@ -48,10 +48,12 @@ $router->get('/favicon',         [FaviconController::class, 'show']);
 // scan actions. NOTE: declare literal '/targets/check' and '/targets/create'
 // BEFORE '/targets/{id}', or the {id} pattern would swallow those words.
 $router->get('/targets/create',       [TargetController::class, 'create']);
+$router->get('/targets/export',       [TargetController::class, 'export']);
 $router->post('/targets/check',       [TargetController::class, 'check']);
 $router->post('/targets',             [TargetController::class, 'store']);
 $router->get('/targets/{id}',         [TargetController::class, 'show']);
 $router->get('/targets/{id}/edit',    [TargetController::class, 'edit']);
+$router->get('/targets/{id}/export',  [TargetController::class, 'exportHistory']);
 $router->post('/targets/{id}',        [TargetController::class, 'update']);
 $router->post('/targets/{id}/delete', [TargetController::class, 'destroy']);
 
@@ -64,4 +66,5 @@ $router->post('/settings/delete',     [SettingsController::class, 'deleteAccount
 
 // --- Admin (admin role only) -----------------------------------------------
 $router->get('/admin',           [AdminController::class, 'index']);
+$router->get('/admin/export',    [AdminController::class, 'exportRuns']);
 $router->get('/admin/users',     [AdminController::class, 'users']);

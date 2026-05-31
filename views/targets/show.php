@@ -32,7 +32,12 @@ $status = monitor_status($isOk, $days);
     </div></div></div>
 </div>
 
-<h3 class="mb-3">History</h3>
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h3 class="mb-0">History</h3>
+    <?php if ($history !== []): ?>
+        <a class="btn btn-outline-secondary btn-sm" href="<?= e(url('/targets/' . $target['PK_MonitoredTargetID'] . '/export')) ?>">Export CSV</a>
+    <?php endif; ?>
+</div>
 <?php if ($history === []): ?>
     <div class="card"><div class="card-body text-muted-2">No checks recorded yet. Run a check to start the timeline.</div></div>
 <?php else: ?>

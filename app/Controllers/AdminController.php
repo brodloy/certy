@@ -79,6 +79,28 @@ class AdminController
         ], 'app');
     }
 
+    /** GET /admin/export — the MonitorRun log as CSV. */
+    public function exportRuns(): string
+    {
+        require_admin();
+
+        $rows = db()->all('SELECT * FROM `MonitorRun` ORDER BY `PK_MonitorRunID` DESC');
+
+        $data = [];
+        foreach ($rows as $r) {
+            $data[] = [
+                $r['StartedAt'], $r['Mode'], $r['DueCount'] ?? '',
+                $r['CheckedCount'], $r['OkCount'], $r['FailedCount'], $r['DurationMs'],
+            ];
+        }
+
+        csv_download(
+            'certy-monitor-runs-' . gmdate('Ymd') . '.csv',
+            ['started_at_utc', 'mode', 'due_count', 'checked', 'ok', 'failed', 'duration_ms'],
+            $data,
+        );
+    }
+
     public function users(): string
     {
         require_admin();
