@@ -159,5 +159,18 @@ To switch a deployed box to real email:
 3. Trigger a verification/reset email and confirm it arrives. If it doesn't,
    check `storage/logs/app.log` for an `SMTP send failed:` line.
 
+## Pre-launch (private testing)
+While the site is shared for testing but not publicly launched, two `config.php`
+flags keep it locked down (both default to the safe/private value, so an
+un-updated `config.php` is already private):
+- **`search_indexable`** (default `false`) — emits `<meta name="robots"
+  content="noindex, nofollow">` on every page so search engines don't index it.
+  Set `true` at public launch.
+- **`signup_code`** (default `''`) — when set to a string, the register form
+  requires that shared code, so only people you give it to can sign up. Hand
+  testers the URL + code. Set back to `''` (or remove) to open registration at
+  launch. *(Note: this gates the email/password form; OAuth sign-up, if you ever
+  enable Google/GitHub, would bypass it.)*
+
 ## Updating the server stack / adding more projects
 Both are **host-level** concerns — see the infrastructure runbook, not this doc.

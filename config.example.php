@@ -11,6 +11,7 @@ return [
     'debug'    => true,        // true locally (show errors). Set FALSE in production.
     'timezone' => 'UTC',       // how dates are DISPLAYED (stored in UTC always). e.g. 'Europe/London'
     'search_indexable' => false, // false = noindex (pre-launch/testing). Set true at public launch.
+    'signup_code'      => '',    // if set, the register form requires this code (private-beta gate). '' = open.
 
     // Monitoring
     'scan_interval_minutes' => 720, // `monitor:run --due` skips targets checked within this window (minutes; 720 = 12h)

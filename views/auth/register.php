@@ -5,6 +5,12 @@
     <div class="card"><div class="card-body">
         <form method="post" action="<?= e(url('/register')) ?>">
             <?= csrf_field() ?>
+            <?php if (config('signup_code', '') !== ''): ?>
+            <div class="mb-3"><label class="form-label">Signup code</label>
+                <input class="form-control<?= invalid_class('signup_code') ?>" type="text" name="signup_code" value="<?= e(old('signup_code')) ?>" autocomplete="off">
+                <div class="form-text">Required during the private beta.</div>
+                <?= field_error('signup_code') ?></div>
+            <?php endif; ?>
             <div class="mb-3"><label class="form-label">Name</label>
                 <input class="form-control<?= invalid_class('name') ?>" type="text" name="name" value="<?= e(old('name')) ?>">
                 <?= field_error('name') ?></div>

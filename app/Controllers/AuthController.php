@@ -60,6 +60,12 @@ class AuthController
         $confirm  = input('password_confirm');
 
         $errors = [];
+        // Private-beta gate: if a signup_code is configured, it must match.
+        // Unset/empty code = open registration (local dev, post-launch).
+        $signupCode = (string) config('signup_code', '');
+        if ($signupCode !== '' && !hash_equals($signupCode, input('signup_code'))) {
+            $errors['signup_code'] = 'That signup code is incorrect.';
+        }
         if ($name === '') {
             $errors['name'] = 'Please enter your name.';
         }
@@ -76,7 +82,8 @@ class AuthController
         }
 
         if ($errors) {
-            return redirect_errors('/register', $errors, ['name' => $name, 'email' => $email]);
+            return redirect_errors('/register', $errors,
+                ['name' => $name, 'email' => $email, 'signup_code' => input('signup_code')]);
         }
 
         // The UNIQUE index on Email is the real safety net if two people race.
@@ -84,7 +91,7 @@ class AuthController
             $id = auth()->register($name, $email, $password);
         } catch (PDOException) {
             return redirect_errors('/register', ['email' => 'That email is already registered.'],
-                ['name' => $name, 'email' => $email]);
+                ['name' => $name, 'email' => $email, 'signup_code' => input('signup_code')]);
         }
 
         auth()->login(['PK_UserID' => $id]);

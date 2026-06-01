@@ -15,6 +15,7 @@ return [
     'debug'    => false,                               // MUST be false in production
     'timezone' => 'Europe/London',                      // DISPLAY tz; storage stays UTC
     'search_indexable' => false,  // false = noindex (private testing). Set true at public launch.
+    'signup_code'      => '',     // set to a shared code to gate sign-ups during testing; '' = open.
 
     // Monitoring
     'scan_interval_minutes' => 720,  // 12h; the systemd timer fires hourly but --due throttles
