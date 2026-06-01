@@ -1,0 +1,36 @@
+# certy — Caddy site block for the VPS.
+#
+# Caddy is the single front door for the whole box: it listens on 80/443 and
+# serves one site block per subdomain, fetching + auto-renewing a Let's Encrypt
+# certificate for each. To add another project later, add another block below.
+#
+# Install: append this block to /etc/caddy/Caddyfile, then `sudo systemctl reload caddy`.
+# See docs/deployment.md for the full runbook.
+
+certy.bradleyboothman.dev {
+	# The web root is the project's public/ dir ONLY. Everything else
+	# (app/, storage/, config.php, .git/) lives one level up and is therefore
+	# never web-accessible — that's the whole security model.
+	root * /var/www/certy/public
+
+	encode gzip
+
+	# Run PHP via php-fpm and route every non-file request to index.php
+	# (the front controller). This replaces the Apache .htaccess rewrite.
+	# If your PHP-FPM version differs, change php8.3 to match.
+	php_fastcgi unix//run/php/php8.3-fpm.sock
+
+	file_server
+
+	log {
+		output file /var/log/caddy/certy.access.log
+	}
+}
+
+# --- Adding another project later -------------------------------------------
+# project2.bradleyboothman.dev {
+#     root * /var/www/project2/public
+#     encode gzip
+#     php_fastcgi unix//run/php/php8.3-fpm.sock
+#     file_server
+# }

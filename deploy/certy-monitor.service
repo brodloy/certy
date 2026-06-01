@@ -1,0 +1,24 @@
+# certy — scheduled scan unit (the Linux equivalent of the Windows Task
+# Scheduler job in docs/scheduling.md). Triggered by certy-monitor.timer.
+#
+# Install:
+#   sudo cp deploy/certy-monitor.{service,timer} /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now certy-monitor.timer
+# Inspect:
+#   systemctl list-timers certy-monitor.timer
+#   journalctl -u certy-monitor.service --since today
+
+[Unit]
+Description=certy — scheduled certificate/domain scan (monitor:run --due)
+After=network-online.target mysql.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/certy
+# --due throttles the real work to once per scan_interval_minutes, so it's
+# safe to fire this hourly (see the timer). Exits non-zero on failure.
+ExecStart=/usr/bin/php console monitor:run --due

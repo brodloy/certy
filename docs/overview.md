@@ -20,6 +20,8 @@ namespaces, no framework). See `architecture.md`.
 - **Hosted SaaS**, not self-hosted-per-user. One central server runs the app and
   performs all checks. Each user only sees their own targets.
 - Runs locally on **WAMP / MAMP (Windows + Apache + MySQL + PHP 8.3)**.
+- Production target: a **Linux VPS** (Ubuntu + Caddy + php-fpm + MySQL) serving
+  it at a subdomain, with push-to-deploy. See `deployment.md`.
 - The two checkers make outbound connections: TLS (443) for SSL, and WHOIS
   (port 43) for domains. Some networks block port 43 — domain checks then fail
   locally even though the code is correct.

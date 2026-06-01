@@ -1,0 +1,38 @@
+# Auto-deploy certy to the VPS on every push to main.
+#
+# How it works: when you push to main, GitHub SSHes into the server and runs
+# deploy/deploy.sh (git pull + migrate). Push-to-deploy — no manual step.
+#
+# One-time setup (see docs/deployment.md §Auto-deploy):
+#   1. On the VPS, create an SSH key for deploys and authorise it.
+#   2. Add three repo secrets (Settings → Secrets and variables → Actions):
+#        DEPLOY_HOST     the VPS IP or hostname
+#        DEPLOY_USER     the deploy user (e.g. deploy)
+#        DEPLOY_SSH_KEY  the PRIVATE key whose public half is on the server
+#
+# You can also trigger a deploy by hand from the Actions tab (workflow_dispatch).
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Never let two deploys run at once; let an in-flight one finish.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        # appleboy/ssh-action is a widely used community action; pinned to a tag.
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: /var/www/certy/deploy/deploy.sh

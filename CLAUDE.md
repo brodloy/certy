@@ -17,6 +17,7 @@ Runs locally on MAMP (Windows, Apache, MySQL, PHP 8.3).
 - `database.md` — schema, conventions, status derivation
 - `security.md` — ownership, CSRF, OAuth, the "never break" rules
 - `scheduling.md` — running the scanner unattended
+- `deployment.md` — deploying certy to the VPS (config, web, scheduler, auto-deploy)
 
 Read the relevant one before a task. **If a change alters how something works,
 update the matching doc in the same change** — a stale doc misleads.

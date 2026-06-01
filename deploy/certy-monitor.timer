@@ -1,0 +1,16 @@
+# certy — fires certy-monitor.service hourly. `--due` inside the job means each
+# target is still only actually checked once per scan_interval_minutes (12h by
+# default), so hourly firing is cheap and self-throttling. See docs/scheduling.md.
+
+[Unit]
+Description=Run certy monitor:run --due hourly
+
+[Timer]
+OnCalendar=hourly
+# If the box was off when a run was due, run it once at next boot.
+Persistent=true
+# Spread load off the exact top of the hour.
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target
