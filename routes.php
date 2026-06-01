@@ -23,6 +23,7 @@ $router->get('/register',        [AuthController::class, 'showRegister']);
 $router->post('/register',       [AuthController::class, 'register']);
 $router->post('/logout',         [AuthController::class, 'logout']);
 $router->post('/demo',           [AuthController::class, 'demoLogin']);  // one-click demo account
+$router->post('/demo/reset',     [AuthController::class, 'demoReset']);  // restore demo data on demand
 $router->get('/forgot',          [AuthController::class, 'showForgot']);
 $router->post('/forgot',         [AuthController::class, 'sendReset']);
 $router->get('/reset',           [AuthController::class, 'showReset']);

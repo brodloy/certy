@@ -169,6 +169,44 @@
     </div>
 </section>
 
+<!-- ===== Under the hood (for the curious / technical) ===== -->
+<section class="section" style="padding-top:0;" id="built">
+    <div class="container">
+        <div class="section-head">
+            <h2>Built from scratch &mdash; no framework.</h2>
+            <p>A deliberate exercise in doing more with less: ~5,000 lines of plain PHP 8, zero Composer dependencies, deployed and running in production.</p>
+        </div>
+        <div class="trust-chips" style="justify-content:center;margin-bottom:2rem;">
+            <span class="trust-chip">PHP 8.3</span>
+            <span class="trust-chip">No framework</span>
+            <span class="trust-chip">No Composer</span>
+            <span class="trust-chip">MySQL</span>
+            <span class="trust-chip">Caddy</span>
+            <span class="trust-chip">systemd</span>
+            <span class="trust-chip">GitHub Actions</span>
+            <span class="trust-chip">Cloudflare</span>
+        </div>
+        <div class="feature-grid">
+            <div class="card feature-card"><div class="card-body">
+                <h3>Hand-rolled foundations</h3>
+                <p class="text-muted-2 mb-0">A tiny regex router, a thin PDO wrapper, and global helpers stand in for a framework. SQL lives in the controllers &mdash; no ORM, no magic, every query visible.</p>
+            </div></div>
+            <div class="card feature-card"><div class="card-body">
+                <h3>Real protocol work</h3>
+                <p class="text-muted-2 mb-0">Certificates are read over a raw TLS socket and parsed with OpenSSL; domains over a raw WHOIS query on port 43. With strict mode, the chain and hostname are verified too.</p>
+            </div></div>
+            <div class="card feature-card"><div class="card-body">
+                <h3>Secure multi-tenancy</h3>
+                <p class="text-muted-2 mb-0">Every record is scoped to its owner (404 on a miss), every POST is CSRF-checked, passwords are argon2id, and output is escaped by default.</p>
+            </div></div>
+            <div class="card feature-card"><div class="card-body">
+                <h3>Production ops</h3>
+                <p class="text-muted-2 mb-0">A Linux VPS behind Caddy (automatic HTTPS), a systemd timer running the scans, nightly database backups, and push-to-<code>main</code> auto-deploy via GitHub Actions.</p>
+            </div></div>
+        </div>
+    </div>
+</section>
+
 <!-- ===== Closing CTA ===== -->
 <section class="section" style="padding-top:0;">
     <div class="container">

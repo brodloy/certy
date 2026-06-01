@@ -56,6 +56,17 @@ class AuthController
             "Welcome to the certy demo — it's fully functional, and resets nightly.");
     }
 
+    /** POST /demo/reset — let a demo visitor restore the demo to its clean state. */
+    public function demoReset(): string
+    {
+        require_login();
+        if (!is_demo_user()) {
+            return redirect('/dashboard');
+        }
+        (new DemoService())->reset();
+        return redirect_with('/dashboard', 'success', 'Demo restored to its starting state.');
+    }
+
     // ---- Register ---------------------------------------------------------
 
     public function showRegister(): string

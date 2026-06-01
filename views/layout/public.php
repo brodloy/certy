@@ -15,6 +15,14 @@
     <?php /* Keep the site out of search engines until launch (search_indexable => true). */ ?>
     <?php if (!config('search_indexable', false)): ?><meta name="robots" content="noindex, nofollow"><?php endif; ?>
     <title><?= e($title ?? config('app_name')) ?></title>
+    <?php /* Social preview when the link is shared (LinkedIn / CV / etc.). */ ?>
+    <meta name="description" content="certy watches your SSL certificates and domains and warns you before they expire — a from-scratch, no-dependency PHP 8 app.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="<?= e(config('app_name')) ?>">
+    <meta property="og:title" content="certy — SSL &amp; domain expiry monitor">
+    <meta property="og:description" content="Get warned before a certificate or domain lapses. Built from scratch in PHP 8 — no framework, no dependencies.">
+    <meta property="og:url" content="<?= e(url('/')) ?>">
+    <meta name="twitter:card" content="summary">
     <link rel="icon" type="image/svg+xml" href="<?= e(url('assets/img/favicon.svg')) ?>">
     <link rel="icon" type="image/png" sizes="32x32" href="<?= e(url('assets/img/favicon-32.png')) ?>">
     <link rel="icon" href="<?= e(url('assets/img/favicon.ico')) ?>" sizes="any">
