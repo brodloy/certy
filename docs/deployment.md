@@ -159,6 +159,14 @@ To switch a deployed box to real email:
 3. Trigger a verification/reset email and confirm it arrives. If it doesn't,
    check `storage/logs/app.log` for an `SMTP send failed:` line.
 
+## Backups
+- **Database:** a root cron runs `/usr/local/bin/certy-backup.sh` nightly at
+  **03:00 UTC** — `mysqldump --single-transaction --all-databases | gzip` to
+  `/var/backups/certy/`, 14 days kept. Restore a dump with
+  `gunzip < /var/backups/certy/<file>.sql.gz | sudo mysql`.
+- **Whole server:** optionally enable Hetzner Cloud **Backups** (console toggle)
+  for daily VM snapshots — covers losing the whole machine, which the DB dumps don't.
+
 ## Pre-launch (private testing)
 While the site is shared for testing but not publicly launched, two `config.php`
 flags keep it locked down (both default to the safe/private value, so an

@@ -2,7 +2,7 @@
 
 > **Keep this current, and treat it as rules — not suggestions.** These are the
 > invariants that keep tenants isolated and accounts safe. If a task would break
-> one of these, stop and flag it. Last verified against the code: 2026-05-31.
+> one of these, stop and flag it. Last verified against the code: 2026-06-01.
 
 ## 1. Per-user ownership (multi-tenant isolation) — the most important rule
 
@@ -94,6 +94,19 @@ and 404 on a miss. No exceptions.
 - **All SQL uses bound parameters** via `db()` — never string-concatenate user
   input into SQL.
 - Host input is cleaned/validated (`clean_host()`, `looksLikeHost`) before storage.
+
+## 8. Registration gate (private beta)
+
+- When `signup_code` is set in `config.php`, the email/password register form
+  requires that shared code (`AuthController::register`, compared with
+  `hash_equals`). Empty/unset = open registration. This is an **access gate for
+  who can create accounts**, not an auth mechanism — it doesn't protect existing
+  accounts or data (per-user ownership above does that).
+- **Caveat:** the code gates only the email/password form. If you ever enable
+  Google/GitHub sign-in, OAuth sign-up would bypass it — gate OAuth too if you
+  need the beta fully closed.
+- `search_indexable => false` (the default) emits a `noindex` meta on every page
+  so a pre-launch deploy stays out of search engines. Set `true` at launch.
 
 ## Things never to break (quick checklist)
 

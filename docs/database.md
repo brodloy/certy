@@ -1,7 +1,7 @@
 # certy — Database
 
 > **Keep this current.** Update in the same task as any migration or query change.
-> Last verified against the migrations: 2026-05-31.
+> Last verified against the migrations: 2026-06-01.
 
 ## Conventions
 

@@ -1,7 +1,7 @@
 # certy — Architecture
 
 > **Keep this current.** Update in the same task as any structural change.
-> Last verified against the code: 2026-05-31.
+> Last verified against the code: 2026-06-01.
 
 ## Stack & philosophy
 
@@ -35,7 +35,7 @@ certy/
 │  ├─ Database.php           ← PDO wrapper exposed via db()
 │  ├─ Auth.php               ← auth, OAuth, sessions, account ops
 │  ├─ helpers.php            ← global helper functions (the "framework")
-│  ├─ Controllers/           ← one class per area
+│  ├─ Controllers/           ← one class per area (Google/GitHub auth share an OAuthController base)
 │  ├─ Checks/                ← CertificateChecker, DomainChecker
 │  └─ Services/              ← MonitorService (scan orchestrator)
 ├─ views/
@@ -69,9 +69,14 @@ The scanning feature deliberately separates concerns:
   a target, does the network work, returns a plain result array of a shared shape
   (`ok`, `type`, `host`, `expires_at`, `days_left`, `issuer`, `subject`,
   `error`, `checked_at`). They are trigger-agnostic and know nothing about the DB.
+  `CertificateChecker` takes an optional `$verify` flag (from the target's
+  `VerifyTls`) — strict mode also requires the cert to pass chain/hostname
+  verification, else it reports failed.
 - **`MonitorService`** (`app/Services/`): the ONE place scans are generated. Loads
   targets, runs the right checker, persists a `CheckResult` row, and updates the
-  denormalised `Last*` snapshot on `MonitoredTarget`. Does NOT send alerts.
+  denormalised `Last*` snapshot on `MonitoredTarget`. Does NOT send alerts. Retries
+  a *failed* check (`scan_retries`) before accepting it — flap handling — unless
+  called with `retry=false` (the interactive dashboard scan).
 - **`AlertDispatcher`** (`app/Services/`): turns scan results into emails — expiry
   tiers + new-failure alerts, deduped via `AlertLog`. Called ONLY by `monitor:run`
   (the scheduled trigger), never by the dashboard scan endpoint.

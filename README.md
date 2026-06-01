@@ -50,16 +50,20 @@ Password reset and email verification need no mail setup locally — the message
   the dashboard
 - Two check types — **SSL certificate** expiry (raw TLS handshake) and **domain**
   registration expiry (raw WHOIS, port 43)
+- **Strict TLS validation** (opt-in per SSL target) — also flags certs that are
+  *invalid* (wrong host, self-signed, untrusted root), not just expiring
 - Colour-coded dashboard — KPI tally, per-row Scan / Edit / Delete, result/host
   filters, sorted worst-first. Derived statuses: healthy / expiring soon /
   critical / expired / failed / unchecked
 - On-demand **Scan** and **Scan all** (live, no page reload)
 - Per-target history timeline (click a host), with each host's favicon
-- **Scheduled scanning** via `php console monitor:run --due` (Task Scheduler / cron)
+- **Scheduled scanning** via `php console monitor:run --due` (Task Scheduler / cron
+  / systemd timer), with transient-failure **retries** so a blip can't fire a false alert
 - **Scales out** — optional DB-backed job queue (`monitor:enqueue`) + parallel
   `monitor:work` workers run the same scans across many processes
 - **Email alerts** — HTML + plain-text, expiry tiers (30/14/7/1 days) and check
-  failures, sent from the scheduled run to verified users
+  failures, sent from the scheduled run to verified users. Delivery via the
+  configured mail driver: `log` (local), PHP `mail()`, or an **SMTP relay**
 - **CSV export** — your targets + status, a target's history, and (admin) the
   scan-run log
 - **Admin overview** (`/admin`) — system-wide users / targets / scanner metrics,
@@ -119,12 +123,16 @@ works — read the relevant one before a change, and keep it current:
 - [database.md](docs/database.md) — schema, conventions, status derivation
 - [security.md](docs/security.md) — ownership, CSRF, OAuth, the "never break" rules
 - [scheduling.md](docs/scheduling.md) — running the scanner unattended
+- [deployment.md](docs/deployment.md) — deploying to a Linux VPS (config, web, scheduler, auto-deploy)
 
 ## Going to production
 
-In `config.php`: set `debug => false`, a real `app_url` (https), real DB creds,
-and a real `mail_driver`. Serve over HTTPS, point the document root at `public/`,
-make `storage/logs/` writable, run `php console db:migrate` on deploy, and
-schedule `db:cleanup` + `monitor:run --due` (see [docs/scheduling.md](docs/scheduling.md)).
+certy runs in production on a Linux VPS (Ubuntu + Caddy + php-fpm + MySQL) with
+push-to-deploy. The full runbook is in **[docs/deployment.md](docs/deployment.md)**;
+in short: set `debug => false`, a real `app_url` (https), real DB creds, an
+`smtp` mail driver, serve `public/` over HTTPS, run `php console db:migrate` on
+deploy, and schedule `monitor:run --due` + `db:cleanup`. Two pre-launch flags
+(`search_indexable`, `signup_code`) keep a not-yet-public deploy noindexed and
+invite-only.
 </content>
 </invoke>

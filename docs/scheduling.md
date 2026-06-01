@@ -26,6 +26,12 @@ target transitions into a failed check. The dashboard "Scan all" deliberately do
 **not** alert (you're watching the screen). Set `alerts_enabled => false` in
 `config.php` to silence all alerting; the run summary reports how many were sent.
 
+**Flap handling.** A check that fails in the scheduled run is **retried** a few
+times (`scan_retries`, default 2; `scan_retry_delay_ms` between attempts) before
+the failure is accepted — so a momentary network blip can't flip a healthy target
+to `failed` and fire a false alert. The interactive dashboard scan skips retries
+(it never alerts, and favours a fast response).
+
 It prints a one-line summary and exits **non-zero on failure**, so a scheduler can
 detect a broken run:
 
@@ -88,16 +94,19 @@ schtasks /Create /TN "certy monitor:run" /SC HOURLY ^
 > `schtasks` has no "Start in" field, so the action uses **absolute paths** for
 > both the PHP binary and the `console` script.
 
-## Linux — cron (future deploy)
+## Linux — systemd timer (production)
 
-When certy moves to a Linux host, the equivalent is a crontab entry. Hourly:
+certy runs in production on a Linux VPS, where the scheduled scan is a **systemd
+timer** (`deploy/certy-monitor.{service,timer}`, fired hourly) rather than cron.
+Install steps are in [`deployment.md`](deployment.md). The plain-cron equivalent,
+for a host without systemd:
 
 ```cron
 0 * * * * cd /var/www/certy && /usr/bin/php console monitor:run --due >> storage/logs/monitor.log 2>&1
 ```
 
-Use the path to a PHP CLI binary that has `openssl` (on Linux it's standard).
-`cd` into the project first (or the app can't resolve its paths).
+Use a PHP CLI binary that has `openssl` (standard on Linux). `cd` into the
+project first (or the app can't resolve its paths).
 
 ## Recommended frequency
 

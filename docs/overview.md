@@ -2,7 +2,7 @@
 
 > **Keep this current.** When a feature ships, changes, or is removed, update this
 > file in the same task. A stale doc is worse than none — it confidently misleads.
-> Last verified against the code: 2026-05-31.
+> Last verified against the code: 2026-06-01.
 
 ## What it is
 
@@ -26,7 +26,7 @@ namespaces, no framework). See `architecture.md`.
   (port 43) for domains. Some networks block port 43 — domain checks then fail
   locally even though the code is correct.
 
-## Feature status (verified 2026-05-31)
+## Feature status (verified 2026-06-01)
 
 **Built and working:**
 - Email/password auth (argon2id, rate-limited, remember-me, email verification,
@@ -50,7 +50,8 @@ namespaces, no framework). See `architecture.md`.
   expiry tier (`LK_AlertThreshold`: 30/14/7/1 days) and once when a check
   transitions into **failed**. Dedup via `AlertLog` keyed by the expiry it fired
   against, so a renewal re-arms every tier. Verified emails only; toggle with
-  `alerts_enabled` in `config.php`.
+  `alerts_enabled` in `config.php`. Delivery uses the configured `mail_driver`
+  (`log` locally / PHP `mail()` / **SMTP relay** in production).
 - **Dashboard**: the home page — colour-coded status table + KPI tally, with
   per-row Scan / Edit / Delete and result/host filters. The single list of targets,
   sorted worst-first. Status is derived (never stored): healthy / expiring soon /
