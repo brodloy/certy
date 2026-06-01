@@ -121,7 +121,7 @@ class AuthController
         }
 
         return redirect_with('/login', 'success',
-            'If that email exists, a reset link has been sent. (Locally: see storage/logs/mail.log)');
+            'If that email exists, a reset link has been sent.' . mail_log_hint());
     }
 
     public function showReset(): string
@@ -189,6 +189,6 @@ class AuthController
         if (empty($user['VerifiedAt'])) {
             auth()->sendVerification((int) $user['PK_UserID'], $user['Email']);
         }
-        return redirect_with('/dashboard', 'success', 'Verification email sent. (Locally: see storage/logs/mail.log)');
+        return redirect_with('/dashboard', 'success', 'Verification email sent.' . mail_log_hint());
     }
 }

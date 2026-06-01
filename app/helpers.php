@@ -557,6 +557,16 @@ function smtp_build_message(string $to, string $subject, string $text, ?string $
     return implode($eol, $headers) . $eol . $eol . $body;
 }
 
+/**
+ * A dev-only hint pointing at the mail log, for "we sent you an email" notices.
+ * Empty unless the 'log' driver is active — so production (smtp/mail) shows a
+ * clean message, while local dev still tells you where to read the link.
+ */
+function mail_log_hint(): string
+{
+    return config('mail_driver') === 'log' ? ' (Locally: see storage/logs/mail.log)' : '';
+}
+
 // ---- Monitoring status ----------------------------------------------------
 
 /**
