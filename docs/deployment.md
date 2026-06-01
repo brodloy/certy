@@ -131,15 +131,33 @@ PHP opcache picks up changed files automatically, so no reload is needed.
 > Migrations run on every deploy and are idempotent (only new files apply). Keep
 > migrations additive so a deploy can't break a running site.
 
-## Email (Phase 6 — pending a small code change)
+## Email (SMTP)
 
-certy's `send_mail()` currently supports only `'log'` (writes to
-`storage/logs/mail.log`) and `'mail'` (PHP `mail()`). For reliable delivery from
-a subdomain we'll add an **`'smtp'`** driver and point it at a relay
-(Resend / Postmark / Mailgun / SES), then set `mail_driver => 'smtp'` and the
-`smtp_*` keys in `config.php`. You'll also add SPF + DKIM records (the relay
-gives you these) in Cloudflare for the sending domain. Until then, leave
-`mail_driver` as `'log'` — sign-up/reset still work via the log file.
+`send_mail()` supports three drivers via `mail_driver` in `config.php`:
+- `'log'` — writes the message to `storage/logs/mail.log` (no delivery; the
+  default for first deploy, so sign-up/reset links are still readable).
+- `'mail'` — PHP's built-in `mail()` (needs a local MTA; poor deliverability).
+- `'smtp'` — an authenticated SMTP relay (Resend / Postmark / Mailgun / SES).
+  No library — `smtp_send()` in `helpers.php` talks SMTP over a socket
+  (EHLO → STARTTLS → AUTH LOGIN → DATA). Failures are logged, never thrown, so a
+  relay hiccup can't break a signup.
+
+To switch a deployed box to real email:
+1. Create an account at a relay and **verify the sending domain** — it gives you
+   **SPF + DKIM** (and ideally **DMARC**) DNS records. Add those in Cloudflare
+   for `bradleyboothman.dev`.
+2. In `config.php` set:
+   ```php
+   'mail_driver' => 'smtp',
+   'mail_from'   => 'no-reply@bradleyboothman.dev',  // a verified-domain address
+   'smtp_host'   => 'smtp.resend.com',   // from the relay
+   'smtp_port'   => 587,                  // 587 = STARTTLS, 465 = implicit TLS
+   'smtp_user'   => 'resend',             // from the relay
+   'smtp_pass'   => '...',                // the relay's API key / SMTP password
+   'smtp_secure' => 'tls',                // 'tls' for 587, 'ssl' for 465
+   ```
+3. Trigger a verification/reset email and confirm it arrives. If it doesn't,
+   check `storage/logs/app.log` for an `SMTP send failed:` line.
 
 ## Updating the server stack / adding more projects
 Both are **host-level** concerns — see the infrastructure runbook, not this doc.

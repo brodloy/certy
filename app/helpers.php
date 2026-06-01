@@ -411,6 +411,18 @@ function send_mail(string $to, string $subject, string $text, ?string $html = nu
         return;
     }
 
+    // 'smtp' — send through an authenticated SMTP relay (Resend/Postmark/etc.).
+    // Best-effort: a relay hiccup must never break a signup/reset, so failures
+    // are logged (storage/logs/app.log), not thrown.
+    if (config('mail_driver') === 'smtp') {
+        try {
+            smtp_send($to, $subject, $text, $html);
+        } catch (Throwable $e) {
+            log_message('error', 'SMTP send failed: ' . $e->getMessage());
+        }
+        return;
+    }
+
     $from = 'From: ' . config('mail_from') . "\r\n" . "MIME-Version: 1.0\r\n";
 
     if ($html === null) {
@@ -428,6 +440,121 @@ function send_mail(string $to, string $subject, string $text, ?string $html = nu
         . 'Content-Type: text/html; charset=UTF-8' . $eol . $eol . $html . $eol . $eol
         . '--' . $boundary . '--' . $eol;
     mail($to, $subject, $body, $headers);
+}
+
+/**
+ * Send one message through an authenticated SMTP relay, no library — just a
+ * socket. Reads config: smtp_host, smtp_port, smtp_user, smtp_pass, and
+ * smtp_secure ('tls' = STARTTLS on 587, 'ssl' = implicit TLS on 465). Throws a
+ * RuntimeException on any protocol error (the caller in send_mail catches it).
+ */
+function smtp_send(string $to, string $subject, string $text, ?string $html): void
+{
+    $host   = (string) config('smtp_host');
+    $port   = (int) config('smtp_port', 587);
+    $user   = (string) config('smtp_user');
+    $pass   = (string) config('smtp_pass');
+    $secure = config('smtp_secure', 'tls');
+    $ehloHost = parse_url((string) config('app_url'), PHP_URL_HOST) ?: 'localhost';
+
+    if ($host === '') {
+        throw new RuntimeException('smtp_host is not configured');
+    }
+
+    $transport = $secure === 'ssl' ? "ssl://{$host}:{$port}" : "tcp://{$host}:{$port}";
+    $fp = @stream_socket_client($transport, $errno, $errstr, 15);
+    if ($fp === false) {
+        throw new RuntimeException("connect failed: {$errstr} ({$errno})");
+    }
+    stream_set_timeout($fp, 15);
+
+    // Read one (possibly multi-line) SMTP reply; the last line has a SPACE after
+    // the 3-digit code, continuation lines have a '-'.
+    $read = function () use ($fp): string {
+        $data = '';
+        while (($line = fgets($fp, 1024)) !== false) {
+            $data .= $line;
+            if (strlen($line) >= 4 && $line[3] === ' ') {
+                break;
+            }
+        }
+        return $data;
+    };
+    // Send a command and require the reply to start with $expect (e.g. '250').
+    $cmd = function (string $line, string $expect) use ($fp, $read): void {
+        fwrite($fp, $line . "\r\n");
+        $resp = $read();
+        if (strncmp($resp, $expect, strlen($expect)) !== 0) {
+            throw new RuntimeException("expected {$expect} after '" . explode("\r\n", $line)[0] . "', got: " . trim($resp));
+        }
+    };
+
+    if (strncmp($read(), '220', 3) !== 0) {       // server greeting
+        throw new RuntimeException('no 220 greeting');
+    }
+    $cmd('EHLO ' . $ehloHost, '250');
+
+    if ($secure === 'tls') {
+        $cmd('STARTTLS', '220');
+        if (!stream_socket_enable_crypto($fp, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+            throw new RuntimeException('STARTTLS handshake failed');
+        }
+        $cmd('EHLO ' . $ehloHost, '250');         // must re-EHLO after TLS
+    }
+
+    if ($user !== '') {
+        $cmd('AUTH LOGIN', '334');
+        $cmd(base64_encode($user), '334');
+        $cmd(base64_encode($pass), '235');
+    }
+
+    $cmd('MAIL FROM:<' . config('mail_from') . '>', '250');
+    $cmd('RCPT TO:<' . $to . '>', '250');
+    $cmd('DATA', '354');
+
+    // Body: dot-stuff any line that begins with '.' (SMTP transparency), then
+    // terminate with <CRLF>.<CRLF>.
+    $message = (string) preg_replace('/^\./m', '..', smtp_build_message($to, $subject, $text, $html));
+    fwrite($fp, $message . "\r\n.\r\n");
+    if (strncmp($read(), '250', 3) !== 0) {
+        throw new RuntimeException('message not accepted (no 250 after DATA)');
+    }
+
+    fwrite($fp, "QUIT\r\n");
+    fclose($fp);
+}
+
+/** Build the raw RFC-5322 message (headers + body) for smtp_send(). */
+function smtp_build_message(string $to, string $subject, string $text, ?string $html): string
+{
+    $host = parse_url((string) config('app_url'), PHP_URL_HOST) ?: 'localhost';
+    $eol  = "\r\n";
+    // Normalise any line endings in the bodies to CRLF (SMTP requires it).
+    $crlf = fn (string $s): string => (string) preg_replace('/\r\n|\r|\n/', "\r\n", $s);
+
+    $headers = [
+        'Date: ' . gmdate('D, d M Y H:i:s') . ' +0000',
+        'From: ' . config('mail_from'),
+        'To: ' . $to,
+        'Subject: ' . $subject,
+        'Message-ID: <' . bin2hex(random_bytes(16)) . '@' . $host . '>',
+        'MIME-Version: 1.0',
+    ];
+
+    if ($html === null) {
+        $headers[] = 'Content-Type: text/plain; charset=UTF-8';
+        return implode($eol, $headers) . $eol . $eol . $crlf($text);
+    }
+
+    $boundary = '=_certy_' . bin2hex(random_bytes(12));
+    $headers[] = 'Content-Type: multipart/alternative; boundary="' . $boundary . '"';
+    $body = '--' . $boundary . $eol
+        . 'Content-Type: text/plain; charset=UTF-8' . $eol . $eol . $crlf($text) . $eol . $eol
+        . '--' . $boundary . $eol
+        . 'Content-Type: text/html; charset=UTF-8' . $eol . $eol . $crlf($html) . $eol . $eol
+        . '--' . $boundary . '--' . $eol;
+
+    return implode($eol, $headers) . $eol . $eol . $body;
 }
 
 // ---- Monitoring status ----------------------------------------------------
