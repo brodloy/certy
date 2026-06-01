@@ -75,13 +75,6 @@ class AdminController
             'staleAfterMin' => $staleAfterMin,
         ];
 
-        // Scheduled-run totals over the last 7 days (for a pass-rate read).
-        $run7 = db()->first(
-            "SELECT COUNT(*) AS runs, COALESCE(SUM(`CheckedCount`), 0) AS checked,
-                    COALESCE(SUM(`OkCount`), 0) AS ok, COALESCE(SUM(`FailedCount`), 0) AS failed
-               FROM `MonitorRun` WHERE `StartedAt` >= ?", [$cutoff7],
-        );
-
         // Targets whose last check errored (failing right now).
         $failingNow = (int) (db()->first(
             "SELECT COUNT(*) AS c FROM `MonitoredTarget` WHERE `LastIsOk` = 0")['c'] ?? 0);
@@ -123,7 +116,6 @@ class AdminController
             'lastFull'       => $lastFull,
             'recentRuns'     => $recentRuns,
             'scheduler'      => $scheduler,
-            'run7'           => $run7,
             'failingNow'     => $failingNow,
             'queue'          => $queue,
             'activity'       => $activity,

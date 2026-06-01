@@ -5,7 +5,7 @@
  * @var array $users @var int $newUsers7 @var array $targets @var array $byType
  * @var array $health @var array $checks @var array $runStats
  * @var ?array $lastDue @var ?array $lastFull @var array $recentRuns
- * @var array $scheduler @var array $run7 @var int $failingNow @var array $queue
+ * @var array $scheduler @var int $failingNow @var array $queue
  * @var array $activity @var array $recentFailures
  */
 $num = fn ($v): string => number_format((int) $v);
@@ -18,9 +18,12 @@ $ago = function (?int $m): string {
     $d = intdiv($h, 24);
     return $d . ' day' . ($d === 1 ? '' : 's') . ' ago';
 };
-$passRate = ((int) ($run7['checked'] ?? 0)) > 0
-    ? (int) round(((int) $run7['ok']) / ((int) $run7['checked']) * 100)
-    : null;
+// Pass rate from ACTUAL checks (scheduled + manual) over the last 7 days — the
+// same CheckResult data the activity panel shows, so the two always agree.
+$a7       = $activity['7d'];
+$checked7 = (int) $a7['scheduled']['total'] + (int) $a7['manual']['total'];
+$ok7      = (int) $a7['scheduled']['ok'] + (int) $a7['manual']['ok'];
+$passRate = $checked7 > 0 ? (int) round($ok7 / $checked7 * 100) : null;
 $queueActive = (int) ($queue['pending'] ?? 0) + (int) ($queue['running'] ?? 0);
 $queueFailed = (int) ($queue['failed'] ?? 0);
 $allHealthy  = $scheduler['healthy'] && $failingNow === 0 && $queueFailed === 0;
@@ -77,7 +80,7 @@ $srcLine = function (array $s): string {
     <div class="col-sm-3 col-6"><div class="card stat-card h-100"><div class="card-body">
         <div class="stat-label">Check pass rate</div>
         <div class="stat-value"><?= $passRate === null ? '—' : $passRate . '%' ?></div>
-        <div class="text-faint" style="font-size:.8rem;">last 7 days · <?= $num($run7['checked'] ?? 0) ?> checks</div>
+        <div class="text-faint" style="font-size:.8rem;">last 7 days · <?= $num($checked7) ?> checks</div>
     </div></div></div>
     <div class="col-sm-3 col-6"><div class="card stat-card h-100"><div class="card-body">
         <div class="stat-label">Targets failing</div>
