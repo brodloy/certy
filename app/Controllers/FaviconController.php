@@ -22,8 +22,9 @@ class FaviconController
     {
         require_login();
 
-        $host = $this->cleanHost(input('host'));
-        if ($host === '') {
+        $host = clean_host(input('host'));
+        // Defence in depth for the cache key: only sane host characters survive.
+        if ($host === '' || !preg_match('/^[a-z0-9.-]{1,253}$/', $host)) {
             return $this->miss();
         }
 
@@ -148,21 +149,5 @@ class FaviconController
     {
         http_response_code(404);
         exit;
-    }
-
-    /** Strip scheme/path/www and lower-case (mirrors TargetController::cleanHost). */
-    private function cleanHost(string $host): string
-    {
-        $host = strtolower(trim($host));
-        if ($host === '') {
-            return '';
-        }
-        if (str_contains($host, '://')) {
-            $host = (string) parse_url($host, PHP_URL_HOST);
-        }
-        $host = preg_replace('#[/:].*$#', '', (string) $host);
-        $host = preg_replace('#^www\.#', '', (string) $host);
-        // Only sane host characters survive — defence in depth for the cache key.
-        return preg_match('/^[a-z0-9.-]{1,253}$/', (string) $host) ? (string) $host : '';
     }
 }

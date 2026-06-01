@@ -34,10 +34,7 @@ class DashboardController
         $tally = ['healthy' => 0, 'warning' => 0, 'critical' => 0, 'expired' => 0, 'failed' => 0, 'unknown' => 0];
         $hosts = [];
         foreach ($all as $r) {
-            $tally[monitor_status(
-                $r['LastIsOk'] === null ? null : (int) $r['LastIsOk'],
-                $r['LastDaysLeft'] === null ? null : (int) $r['LastDaysLeft'],
-            )]++;
+            $tally[target_status($r)]++;
             $hosts[$r['Host']] = true;
         }
 
@@ -47,11 +44,7 @@ class DashboardController
                 return false;
             }
             if ($fResult !== '') {
-                $status = monitor_status(
-                    $r['LastIsOk'] === null ? null : (int) $r['LastIsOk'],
-                    $r['LastDaysLeft'] === null ? null : (int) $r['LastDaysLeft'],
-                );
-                // 'ok' = healthy/warning/critical (a successful check); 'failed' = check failed (unknown via failure)
+                // 'ok' = a successful check (LastIsOk = 1); 'failed' = the check ran but failed (LastIsOk = 0)
                 if ($fResult === 'ok'     && ($r['LastIsOk'] === null || (int) $r['LastIsOk'] !== 1)) {
                     return false;
                 }
@@ -65,15 +58,11 @@ class DashboardController
         // Order the visible rows by severity (worst first) rather than raw days,
         // so problems surface at the top: expired, then failed (can't reach the
         // host), then critical, warning, healthy, and never-checked last. Within
-        // a tier, fewest days left first. Ranking reuses monitor_status() so it
+        // a tier, fewest days left first. Ranking reuses target_status() so it
         // always tracks the status thresholds.
         $rank = ['expired' => 0, 'failed' => 1, 'critical' => 2, 'warning' => 3, 'healthy' => 4, 'unknown' => 5];
         usort($rows, function ($a, $b) use ($rank) {
-            $statusOf = fn ($r) => monitor_status(
-                $r['LastIsOk'] === null ? null : (int) $r['LastIsOk'],
-                $r['LastDaysLeft'] === null ? null : (int) $r['LastDaysLeft'],
-            );
-            $cmp = $rank[$statusOf($a)] <=> $rank[$statusOf($b)];
+            $cmp = $rank[target_status($a)] <=> $rank[target_status($b)];
             if ($cmp !== 0) {
                 return $cmp;
             }

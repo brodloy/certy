@@ -35,45 +35,33 @@ class TargetController
                 'You have reached the limit of ' . self::MAX_TARGETS . ' targets.');
         }
 
-        $host  = $this->cleanHost(input('host'));
-        $type  = input('type') === 'domain' ? 'domain' : 'ssl';
-        $label = trim(input('label'));
-        $port  = (int) (input('port') !== '' ? input('port') : '443');
-        if ($port < 1 || $port > 65535) {
-            $port = 443;
-        }
+        $f   = $this->readInput();
+        $old = $this->oldInput($f);
 
-        $errors = [];
-        if ($host === '') {
-            $errors['host'] = 'A host or domain is required.';
-        } elseif (!$this->looksLikeHost($host)) {
-            $errors['host'] = 'That doesn\'t look like a valid host or domain.';
-        }
+        $errors = $this->validate($f);
         if ($errors !== []) {
-            return redirect_errors('/targets/create', $errors,
-                ['host' => $host, 'type' => $type, 'label' => $label, 'port' => (string) $port]);
+            return redirect_errors('/targets/create', $errors, $old);
         }
 
-        $typeId = $this->typeId($type);
+        $typeId = $this->typeId($f['type']);
 
         // Friendly duplicate check (the UNIQUE key is the real guard).
         $dupe = db()->first(
             'SELECT 1 FROM `MonitoredTarget` WHERE `FK_UserID` = ? AND `Host` = ? AND `FK_TargetTypeID` = ?',
-            [current_user()['PK_UserID'], $host, $typeId],
+            [current_user()['PK_UserID'], $f['host'], $typeId],
         );
         if ($dupe !== null) {
             return redirect_errors('/targets/create',
-                ['host' => 'You are already monitoring that host for this check type.'],
-                ['host' => $host, 'type' => $type, 'label' => $label, 'port' => (string) $port]);
+                ['host' => 'You are already monitoring that host for this check type.'], $old);
         }
 
         $now = gmdate('Y-m-d H:i:s');
         db()->insert('MonitoredTarget', [
             'FK_UserID'       => current_user()['PK_UserID'],
             'FK_TargetTypeID' => $typeId,
-            'Host'            => $host,
-            'Port'            => $port,
-            'Label'           => $label !== '' ? $label : null,
+            'Host'            => $f['host'],
+            'Port'            => $f['port'],
+            'Label'           => $f['label'] !== '' ? $f['label'] : null,
             'IsActive'        => 1,
             'CreatedAt'       => $now,
             'UpdatedAt'       => $now,
@@ -101,47 +89,35 @@ class TargetController
         $target = $this->findOwned((int) $id);
         $tid    = (int) $target['PK_MonitoredTargetID'];
 
-        $host  = $this->cleanHost(input('host'));
-        $type  = input('type') === 'domain' ? 'domain' : 'ssl';
-        $label = trim(input('label'));
-        $port  = (int) (input('port') !== '' ? input('port') : '443');
-        if ($port < 1 || $port > 65535) {
-            $port = 443;
-        }
+        $f        = $this->readInput();
+        $old      = $this->oldInput($f);
         $isActive = input('is_active') !== '' ? 1 : 0;
 
-        $errors = [];
-        if ($host === '') {
-            $errors['host'] = 'A host or domain is required.';
-        } elseif (!$this->looksLikeHost($host)) {
-            $errors['host'] = 'That doesn\'t look like a valid host or domain.';
-        }
+        $errors = $this->validate($f);
         if ($errors !== []) {
-            return redirect_errors('/targets/' . $tid . '/edit', $errors,
-                ['host' => $host, 'type' => $type, 'label' => $label, 'port' => (string) $port]);
+            return redirect_errors('/targets/' . $tid . '/edit', $errors, $old);
         }
 
-        $typeId = $this->typeId($type);
+        $typeId = $this->typeId($f['type']);
 
         // Duplicate check — same host+type on another of this user's targets.
         $dupe = db()->first(
             'SELECT 1 FROM `MonitoredTarget`
               WHERE `FK_UserID` = ? AND `Host` = ? AND `FK_TargetTypeID` = ? AND `PK_MonitoredTargetID` <> ?',
-            [current_user()['PK_UserID'], $host, $typeId, $tid],
+            [current_user()['PK_UserID'], $f['host'], $typeId, $tid],
         );
         if ($dupe !== null) {
             return redirect_errors('/targets/' . $tid . '/edit',
-                ['host' => 'You are already monitoring that host for this check type.'],
-                ['host' => $host, 'type' => $type, 'label' => $label, 'port' => (string) $port]);
+                ['host' => 'You are already monitoring that host for this check type.'], $old);
         }
 
         // If host or type changed, the old Last* snapshot no longer applies —
         // clear it so the row shows "unchecked" until the next scan.
-        $changed = ($host !== $target['Host']) || ($typeId !== (int) $target['FK_TargetTypeID']);
+        $changed = ($f['host'] !== $target['Host']) || ($typeId !== (int) $target['FK_TargetTypeID']);
 
         $sql = 'UPDATE `MonitoredTarget`
                    SET `Host` = ?, `FK_TargetTypeID` = ?, `Port` = ?, `Label` = ?, `IsActive` = ?, `UpdatedAt` = ?';
-        $params = [$host, $typeId, $port, $label !== '' ? $label : null, $isActive, gmdate('Y-m-d H:i:s')];
+        $params = [$f['host'], $typeId, $f['port'], $f['label'] !== '' ? $f['label'] : null, $isActive, gmdate('Y-m-d H:i:s')];
         if ($changed) {
             $sql .= ', `LastCheckedAt` = NULL, `LastIsOk` = NULL, `LastExpiresAt` = NULL, `LastDaysLeft` = NULL';
         }
@@ -201,22 +177,13 @@ class TargetController
             [current_user()['PK_UserID']],
         );
 
-        $data = [];
-        foreach ($rows as $r) {
-            $status = monitor_status(
-                $r['LastIsOk'] === null ? null : (int) $r['LastIsOk'],
-                $r['LastDaysLeft'] === null ? null : (int) $r['LastDaysLeft'],
-            );
-            $data[] = [
-                $r['Host'], $r['TypeCode'], $r['Port'], $r['Label'] ?? '', $status,
-                $r['LastExpiresAt'] ?? '', $r['LastDaysLeft'] ?? '', $r['LastCheckedAt'] ?? '',
-            ];
-        }
-
         csv_download(
             'certy-targets-' . gmdate('Ymd') . '.csv',
             ['host', 'type', 'port', 'label', 'status', 'expires_at_utc', 'days_left', 'last_checked_utc'],
-            $data,
+            array_map(fn ($r) => [
+                $r['Host'], $r['TypeCode'], $r['Port'], $r['Label'] ?? '', target_status($r),
+                $r['LastExpiresAt'] ?? '', $r['LastDaysLeft'] ?? '', $r['LastCheckedAt'] ?? '',
+            ], $rows),
         );
     }
 
@@ -231,19 +198,14 @@ class TargetController
             [$target['PK_MonitoredTargetID']],
         );
 
-        $data = [];
-        foreach ($rows as $h) {
-            $data[] = [
-                $h['CheckedAt'], (int) $h['IsOk'], $h['ExpiresAt'] ?? '', $h['DaysLeft'] ?? '',
-                $h['Issuer'] ?? '', $h['Subject'] ?? '', $h['ErrorText'] ?? '',
-            ];
-        }
-
         $slug = preg_replace('/[^a-z0-9.-]/i', '_', (string) $target['Host']);
         csv_download(
             'certy-' . $slug . '-history-' . gmdate('Ymd') . '.csv',
             ['checked_at_utc', 'is_ok', 'expires_at_utc', 'days_left', 'issuer', 'subject', 'error'],
-            $data,
+            array_map(fn ($h) => [
+                $h['CheckedAt'], (int) $h['IsOk'], $h['ExpiresAt'] ?? '', $h['DaysLeft'] ?? '',
+                $h['Issuer'] ?? '', $h['Subject'] ?? '', $h['ErrorText'] ?? '',
+            ], $rows),
         );
     }
 
@@ -278,10 +240,7 @@ class TargetController
         foreach ($rows as $r) {
             $out[] = [
                 'id'          => (int) $r['PK_MonitoredTargetID'],
-                'status'      => monitor_status(
-                    $r['LastIsOk'] === null ? null : (int) $r['LastIsOk'],
-                    $r['LastDaysLeft'] === null ? null : (int) $r['LastDaysLeft'],
-                ),
+                'status'      => target_status($r),
                 'days_left'   => $r['LastDaysLeft'] === null ? null : (int) $r['LastDaysLeft'],
                 'expires_at'  => $r['LastExpiresAt'],
                 'checked_at'  => $r['LastCheckedAt'],
@@ -329,19 +288,37 @@ class TargetController
         return (int) ($row['PK_TargetTypeID'] ?? 1);
     }
 
-    /** Strip scheme/path/www and lower-case, so pasted URLs become bare hosts. */
-    private function cleanHost(string $host): string
+    /**
+     * Read + clean the target fields shared by store() and update():
+     * returns ['host', 'type', 'label', 'port'] (host normalised, port clamped).
+     */
+    private function readInput(): array
     {
-        $host = strtolower(trim($host));
-        if ($host === '') {
-            return '';
+        $port = (int) (input('port') !== '' ? input('port') : '443');
+        return [
+            'host'  => clean_host(input('host')),
+            'type'  => input('type') === 'domain' ? 'domain' : 'ssl',
+            'label' => trim(input('label')),
+            'port'  => ($port < 1 || $port > 65535) ? 443 : $port,
+        ];
+    }
+
+    /** The fields to re-fill the form with after a failed submit. */
+    private function oldInput(array $f): array
+    {
+        return ['host' => $f['host'], 'type' => $f['type'], 'label' => $f['label'], 'port' => (string) $f['port']];
+    }
+
+    /** Validate the cleaned fields; returns [field => message] (empty if valid). */
+    private function validate(array $f): array
+    {
+        $errors = [];
+        if ($f['host'] === '') {
+            $errors['host'] = 'A host or domain is required.';
+        } elseif (!$this->looksLikeHost($f['host'])) {
+            $errors['host'] = 'That doesn\'t look like a valid host or domain.';
         }
-        if (str_contains($host, '://')) {
-            $host = (string) parse_url($host, PHP_URL_HOST);
-        }
-        $host = preg_replace('#[/:].*$#', '', (string) $host);
-        $host = preg_replace('#^www\.#', '', (string) $host);
-        return (string) $host;
+        return $errors;
     }
 
     private function looksLikeHost(string $host): bool

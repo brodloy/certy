@@ -16,7 +16,7 @@
  * Find-or-create-or-link + login is handled by the SAME provider-agnostic
  * auth()->loginWithOAuth() the Google controller uses — just provider 'github'.
  */
-class GitHubAuthController
+class GitHubAuthController extends OAuthController
 {
     private const UA = 'certy-oauth';
 
@@ -43,12 +43,7 @@ class GitHubAuthController
     {
         $this->ensureEnabled();
 
-        // Verify the state we sent (blocks forged callbacks).
-        $state = input('state');
-        if ($state === '' || !hash_equals($_SESSION['oauth_state'] ?? '', $state)) {
-            return redirect_with('/login', 'error', 'Sign-in could not be verified. Please try again.');
-        }
-        unset($_SESSION['oauth_state']);
+        $this->verifyState();
 
         $code = input('code');
         if ($code === '') {
@@ -61,7 +56,7 @@ class GitHubAuthController
             'client_secret' => config('github_client_secret'),
             'code'          => $code,
             'redirect_uri'  => url('/auth/github/callback'),
-            'state'         => $state,
+            'state'         => input('state'),
         ]);
         if (empty($token['access_token'])) {
             return redirect_with('/login', 'error', 'Could not complete GitHub sign-in.');
@@ -128,34 +123,22 @@ class GitHubAuthController
     /** POST form-encoded, request JSON back, return decoded array. */
     private function postJson(string $url, array $data): array
     {
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => http_build_query($data),
-            CURLOPT_TIMEOUT        => 15,
-            CURLOPT_HTTPHEADER     => ['Accept: application/json', 'User-Agent: ' . self::UA],
+        return $this->httpJson($url, [
+            CURLOPT_POST       => true,
+            CURLOPT_POSTFIELDS => http_build_query($data),
+            CURLOPT_HTTPHEADER => ['Accept: application/json', 'User-Agent: ' . self::UA],
         ]);
-        $body = curl_exec($ch);
-        curl_close($ch);
-        return is_string($body) ? (json_decode($body, true) ?: []) : [];
     }
 
     /** GET with a bearer token + required User-Agent, return decoded array. */
     private function getJson(string $url, string $accessToken): array
     {
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER     => [
+        return $this->httpJson($url, [
+            CURLOPT_HTTPHEADER => [
                 'Authorization: Bearer ' . $accessToken,
                 'Accept: application/vnd.github+json',
                 'User-Agent: ' . self::UA,   // GitHub 403s without this
             ],
-            CURLOPT_TIMEOUT        => 15,
         ]);
-        $body = curl_exec($ch);
-        curl_close($ch);
-        return is_string($body) ? (json_decode($body, true) ?: []) : [];
     }
 }

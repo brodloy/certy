@@ -93,7 +93,7 @@ and 404 on a miss. No exceptions.
 - **All output is escaped** with `e()` (htmlspecialchars) in views — prevents XSS.
 - **All SQL uses bound parameters** via `db()` — never string-concatenate user
   input into SQL.
-- Host input is cleaned/validated (`cleanHost`, `looksLikeHost`) before storage.
+- Host input is cleaned/validated (`clean_host()`, `looksLikeHost`) before storage.
 
 ## Things never to break (quick checklist)
 

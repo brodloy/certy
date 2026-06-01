@@ -45,10 +45,7 @@ class AdminController
         // System-wide status tally — derived in PHP (same rule as everywhere).
         $health = ['healthy' => 0, 'warning' => 0, 'critical' => 0, 'expired' => 0, 'failed' => 0, 'unknown' => 0];
         foreach (db()->all("SELECT `LastIsOk`, `LastDaysLeft` FROM `MonitoredTarget`") as $s) {
-            $health[monitor_status(
-                $s['LastIsOk'] === null ? null : (int) $s['LastIsOk'],
-                $s['LastDaysLeft'] === null ? null : (int) $s['LastDaysLeft'],
-            )]++;
+            $health[target_status($s)]++;
         }
 
         // --- Checks + scan runs -------------------------------------------
@@ -86,18 +83,13 @@ class AdminController
 
         $rows = db()->all('SELECT * FROM `MonitorRun` ORDER BY `PK_MonitorRunID` DESC');
 
-        $data = [];
-        foreach ($rows as $r) {
-            $data[] = [
-                $r['StartedAt'], $r['Mode'], $r['DueCount'] ?? '',
-                $r['CheckedCount'], $r['OkCount'], $r['FailedCount'], $r['DurationMs'],
-            ];
-        }
-
         csv_download(
             'certy-monitor-runs-' . gmdate('Ymd') . '.csv',
             ['started_at_utc', 'mode', 'due_count', 'checked', 'ok', 'failed', 'duration_ms'],
-            $data,
+            array_map(fn ($r) => [
+                $r['StartedAt'], $r['Mode'], $r['DueCount'] ?? '',
+                $r['CheckedCount'], $r['OkCount'], $r['FailedCount'], $r['DurationMs'],
+            ], $rows),
         );
     }
 

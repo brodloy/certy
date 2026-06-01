@@ -13,7 +13,7 @@
  *   callback()  → Google returns ?code&state; we verify state, swap the code
  *                 for a token, fetch the profile, then log the user in.
  */
-class GoogleAuthController
+class GoogleAuthController extends OAuthController
 {
     public function redirect(): string
     {
@@ -41,12 +41,7 @@ class GoogleAuthController
     {
         $this->ensureEnabled();
 
-        // Verify the state matches what we sent (blocks forged callbacks).
-        $state = input('state');
-        if ($state === '' || !hash_equals($_SESSION['oauth_state'] ?? '', $state)) {
-            return redirect_with('/login', 'error', 'Sign-in could not be verified. Please try again.');
-        }
-        unset($_SESSION['oauth_state']);
+        $this->verifyState();
 
         $code = input('code');
         if ($code === '') {
@@ -94,29 +89,17 @@ class GoogleAuthController
     /** POST form-encoded, return decoded JSON. */
     private function post(string $url, array $data): array
     {
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => http_build_query($data),
-            CURLOPT_TIMEOUT        => 15,
+        return $this->httpJson($url, [
+            CURLOPT_POST       => true,
+            CURLOPT_POSTFIELDS => http_build_query($data),
         ]);
-        $body = curl_exec($ch);
-        curl_close($ch);
-        return is_string($body) ? (json_decode($body, true) ?: []) : [];
     }
 
     /** GET with a bearer token, return decoded JSON. */
     private function get(string $url, string $accessToken): array
     {
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $accessToken],
-            CURLOPT_TIMEOUT        => 15,
+        return $this->httpJson($url, [
+            CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $accessToken],
         ]);
-        $body = curl_exec($ch);
-        curl_close($ch);
-        return is_string($body) ? (json_decode($body, true) ?: []) : [];
     }
 }

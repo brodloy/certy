@@ -467,6 +467,19 @@ function monitor_status(?int $lastIsOk, ?int $daysLeft): string
 }
 
 /**
+ * Derive a target's status straight from a MonitoredTarget row's `Last*`
+ * snapshot columns — the null-aware casting that every caller would otherwise
+ * repeat. Thin wrapper over monitor_status().
+ */
+function target_status(array $row): string
+{
+    return monitor_status(
+        $row['LastIsOk'] === null ? null : (int) $row['LastIsOk'],
+        $row['LastDaysLeft'] === null ? null : (int) $row['LastDaysLeft'],
+    );
+}
+
+/**
  * Human "days left" text for a snapshot, sign-aware:
  *   5  → "5 days left"   ·   1 → "1 day left"
  *   -3 → "expired 3 days ago"   ·   -1 → "expired 1 day ago"
@@ -498,6 +511,27 @@ function status_badge(string $status): string
 {
     return '<span class="badge-soft is-' . e($status) . '">'
         . e(strtolower(monitor_status_label($status))) . '</span>';
+}
+
+// ---- Hosts ----------------------------------------------------------------
+
+/**
+ * Normalise a host the user typed: lower-case, and strip any scheme, path,
+ * port or leading "www." so a pasted URL (https://www.Example.com/path) becomes
+ * the bare host (example.com). Used wherever a host is stored or looked up.
+ */
+function clean_host(string $host): string
+{
+    $host = strtolower(trim($host));
+    if ($host === '') {
+        return '';
+    }
+    if (str_contains($host, '://')) {
+        $host = (string) parse_url($host, PHP_URL_HOST);
+    }
+    $host = preg_replace('#[/:].*$#', '', (string) $host);
+    $host = preg_replace('#^www\.#', '', (string) $host);
+    return (string) $host;
 }
 
 // ---- Favicons -------------------------------------------------------------
