@@ -57,6 +57,7 @@ Seeded: `1=expiry`, `2=check_failure`.
 | `FK_TargetTypeID` | TINYINT UNSIGNED | → `LK_TargetType` |
 | `Host` | VARCHAR(255) | bare hostname/domain |
 | `Port` | SMALLINT UNSIGNED DEFAULT 443 | SSL only |
+| `VerifyTls` | TINYINT(1) DEFAULT 0 | SSL only. 1 = strict: the cert must also pass chain + hostname verification or the check fails (not just expiry). |
 | `Label` | VARCHAR(255) NULL | friendly name |
 | `IsActive` | TINYINT(1) DEFAULT 1 | paused targets aren't scanned by "scan all" |
 | `LastCheckedAt` / `LastIsOk` / `LastExpiresAt` / `LastDaysLeft` | (nullable) | **Denormalised snapshot of the latest check** — the dashboard reads only these, so it never joins history. `LastDaysLeft` is signed (negative = expired). Cleared on host/type change. |

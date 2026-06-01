@@ -158,15 +158,19 @@ document.addEventListener('submit', function (event) {
 })();
 
 /* ----------------------------------------------------------------------------
-   Add-target form: the Port field only applies to SSL checks, so hide it when
-   the user picks a Domain check. Progressive — the field is visible by default
-   and server-side still defaults the port, so this is purely a clarity touch.
+   Add-target form: some fields (Port, Strict validation) only apply to SSL
+   checks, so hide them when the user picks a Domain check. Progressive — the
+   fields are visible by default and the server still handles the values, so
+   this is purely a clarity touch. Any element marked [data-ssl-field] toggles.
    -------------------------------------------------------------------------- */
 (function () {
     var sel = document.querySelector('[data-type-select]');
-    var port = document.querySelector('[data-port-field]');
-    if (!sel || !port) return;
-    function sync() { port.style.display = (sel.value === 'domain') ? 'none' : ''; }
+    var sslFields = document.querySelectorAll('[data-ssl-field]');
+    if (!sel || !sslFields.length) return;
+    function sync() {
+        var hide = (sel.value === 'domain');
+        sslFields.forEach(function (el) { el.style.display = hide ? 'none' : ''; });
+    }
     sel.addEventListener('change', sync);
     sync();
 })();

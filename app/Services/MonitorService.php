@@ -30,20 +30,20 @@ class MonitorService
      * Run checks and persist them.
      *
      * @param int[]|null $targetIds  null = every active target; otherwise just these ids.
+     * @param bool       $retry      retry a FAILED check a few times before accepting
+     *                               it (flap handling — see checkWithRetry). The
+     *                               scheduled run uses this so a transient blip can't
+     *                               fire a false failure alert; the interactive
+     *                               dashboard scan passes false to stay snappy.
      * @return array<int, array>     list of result-shaped arrays (with 'target_id').
      */
-    public function runChecks(?array $targetIds = null): array
+    public function runChecks(?array $targetIds = null, bool $retry = true): array
     {
         $targets = $this->loadTargets($targetIds);
         $results = [];
 
         foreach ($targets as $t) {
-            $typeCode = $t['TypeCode'];   // 'ssl' | 'domain' (joined from LK_TargetType)
-
-            $result = $typeCode === 'ssl'
-                ? $this->ssl->check($t['Host'], (int) $t['Port'])
-                : $this->domain->check($t['Host']);
-
+            $result = $retry ? $this->checkWithRetry($t) : $this->runOne($t);
             $result['target_id'] = (int) $t['PK_MonitoredTargetID'];
 
             $this->persist((int) $t['PK_MonitoredTargetID'], $result);
@@ -54,6 +54,36 @@ class MonitorService
     }
 
     // --- internals -----------------------------------------------------------
+
+    /** Run the right checker once for a target row. */
+    private function runOne(array $t): array
+    {
+        return $t['TypeCode'] === 'ssl'   // joined from LK_TargetType
+            ? $this->ssl->check($t['Host'], (int) $t['Port'], 8, (bool) ($t['VerifyTls'] ?? false))
+            : $this->domain->check($t['Host']);
+    }
+
+    /**
+     * Run a check, but if it FAILS, retry a few times with a short delay before
+     * accepting the failure. A single transient network blip (a momentary DNS or
+     * routing hiccup) should not flip a healthy target to 'failed' and email the
+     * owner. Tunable via config: scan_retries (extra attempts), scan_retry_delay_ms.
+     */
+    private function checkWithRetry(array $t): array
+    {
+        $retries = max(0, (int) config('scan_retries', 2));
+        $delayMs = max(0, (int) config('scan_retry_delay_ms', 1500));
+
+        for ($attempt = 0; ; $attempt++) {
+            $result = $this->runOne($t);
+            if (!empty($result['ok']) || $attempt >= $retries) {
+                return $result;
+            }
+            if ($delayMs > 0) {
+                usleep($delayMs * 1000);
+            }
+        }
+    }
 
     /** Load active targets (optionally a subset), with their type code joined in. */
     private function loadTargets(?array $targetIds): array

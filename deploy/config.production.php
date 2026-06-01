@@ -20,6 +20,8 @@ return [
     // Monitoring
     'scan_interval_minutes' => 720,  // 12h; the systemd timer fires hourly but --due throttles
     'alerts_enabled'        => true,
+    'scan_retries'          => 2,    // retry a FAILED scheduled check this many extra times before alerting (flap handling)
+    'scan_retry_delay_ms'   => 1500, // pause between those retries
 
     // Database — the dedicated MySQL user you create on the box (never root)
     'db_host' => '127.0.0.1',

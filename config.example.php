@@ -16,6 +16,8 @@ return [
     // Monitoring
     'scan_interval_minutes' => 720, // `monitor:run --due` skips targets checked within this window (minutes; 720 = 12h)
     'alerts_enabled'        => true, // email alerts (expiry tiers + failures) from monitor:run; false disables all alerting
+    'scan_retries'          => 2,    // retry a FAILED scheduled check this many extra times before accepting it (flap handling)
+    'scan_retry_delay_ms'   => 1500, // pause between those retries
 
     // Database — 127.0.0.1:3306, root/root. (Classic MAMP defaults to port 8889.)
     'db_host' => '127.0.0.1',

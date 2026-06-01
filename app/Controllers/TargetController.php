@@ -61,6 +61,7 @@ class TargetController
             'FK_TargetTypeID' => $typeId,
             'Host'            => $f['host'],
             'Port'            => $f['port'],
+            'VerifyTls'       => $f['verifyTls'],
             'Label'           => $f['label'] !== '' ? $f['label'] : null,
             'IsActive'        => 1,
             'CreatedAt'       => $now,
@@ -116,8 +117,8 @@ class TargetController
         $changed = ($f['host'] !== $target['Host']) || ($typeId !== (int) $target['FK_TargetTypeID']);
 
         $sql = 'UPDATE `MonitoredTarget`
-                   SET `Host` = ?, `FK_TargetTypeID` = ?, `Port` = ?, `Label` = ?, `IsActive` = ?, `UpdatedAt` = ?';
-        $params = [$f['host'], $typeId, $f['port'], $f['label'] !== '' ? $f['label'] : null, $isActive, gmdate('Y-m-d H:i:s')];
+                   SET `Host` = ?, `FK_TargetTypeID` = ?, `Port` = ?, `VerifyTls` = ?, `Label` = ?, `IsActive` = ?, `UpdatedAt` = ?';
+        $params = [$f['host'], $typeId, $f['port'], $f['verifyTls'], $f['label'] !== '' ? $f['label'] : null, $isActive, gmdate('Y-m-d H:i:s')];
         if ($changed) {
             $sql .= ', `LastCheckedAt` = NULL, `LastIsOk` = NULL, `LastExpiresAt` = NULL, `LastDaysLeft` = NULL';
         }
@@ -224,7 +225,9 @@ class TargetController
             return json(['ok' => false, 'error' => 'No matching targets.'], 404);
         }
 
-        (new MonitorService())->runChecks($ids);
+        // No retry here: this is the interactive "Scan"/"Scan all" button, so we
+        // favour a fast response over flap-smoothing (it never alerts anyway).
+        (new MonitorService())->runChecks($ids, false);
 
         // Return the refreshed snapshot rows so the page can update in place.
         $holders = implode(', ', array_fill(0, count($ids), '?'));
@@ -296,17 +299,21 @@ class TargetController
     {
         $port = (int) (input('port') !== '' ? input('port') : '443');
         return [
-            'host'  => clean_host(input('host')),
-            'type'  => input('type') === 'domain' ? 'domain' : 'ssl',
-            'label' => trim(input('label')),
-            'port'  => ($port < 1 || $port > 65535) ? 443 : $port,
+            'host'      => clean_host(input('host')),
+            'type'      => input('type') === 'domain' ? 'domain' : 'ssl',
+            'label'     => trim(input('label')),
+            'port'      => ($port < 1 || $port > 65535) ? 443 : $port,
+            'verifyTls' => input('verify_tls') !== '' ? 1 : 0,  // strict TLS (SSL only)
         ];
     }
 
     /** The fields to re-fill the form with after a failed submit. */
     private function oldInput(array $f): array
     {
-        return ['host' => $f['host'], 'type' => $f['type'], 'label' => $f['label'], 'port' => (string) $f['port']];
+        return [
+            'host' => $f['host'], 'type' => $f['type'], 'label' => $f['label'],
+            'port' => (string) $f['port'], 'verify_tls' => $f['verifyTls'] ? '1' : '',
+        ];
     }
 
     /** Validate the cleaned fields; returns [field => message] (empty if valid). */

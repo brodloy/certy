@@ -36,6 +36,9 @@ namespaces, no framework). See `architecture.md`.
   Managed directly from the dashboard (no separate list page).
 - **Scanning**: on-demand "Scan" (one target) and "Scan all" — live, no reload.
   Generates data via one path (`MonitorService`). SSL + domain checkers both work.
+  SSL targets can opt into **strict validation** (flag invalid certs, not just
+  expiry). Scheduled checks **retry a transient failure** before accepting it, so a
+  momentary blip can't fire a false failure alert (`scan_retries` in config).
 - **Scheduled scanning**: `php console monitor:run [--due]` runs checks unattended
   on a timer (Task Scheduler / cron), `--due` honouring `scan_interval_minutes`.
   Same data path as manual scans. Each run is recorded to `MonitorRun`, and the
@@ -81,8 +84,11 @@ namespaces, no framework). See `architecture.md`.
   a Linux deploy is on the table.)
 - Two unused tables (`Example`, `Upload`) remain from the starter; harmless, kept
   to avoid rewriting migration history.
-- **The SSL check does not verify the chain** (`verify_peer => false` in
+- **By default the SSL check does not verify the chain** (`verify_peer => false` in
   `CertificateChecker`) — it deliberately reads the cert even if invalid, so it can
   detect expiry on any cert. Consequence: self-signed / wrong-host / untrusted-root
-  certs still read as **healthy** (only expiry + reachability are judged). A genuine
-  `failed` status comes from a connection/handshake error, not an invalid cert.
+  certs read as **healthy** (only expiry + reachability are judged). A target can
+  opt in to **strict validation** (`VerifyTls = 1`, a checkbox on the target form):
+  the checker then also runs a verifying handshake, and an untrusted / wrong-host /
+  expired cert is reported as **failed**. Without strict mode, a `failed` status
+  comes only from a connection/handshake error, not an invalid cert.

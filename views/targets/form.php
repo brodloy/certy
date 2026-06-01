@@ -12,6 +12,11 @@ $type  = old('type')  ?: ($editing ? $target['TypeCode'] : 'ssl');
 $label = old('label') ?: ($editing ? (string) $target['Label'] : '');
 $port  = old('port')  ?: ($editing ? (string) $target['Port'] : '443');
 $active = $editing ? ((int) $target['IsActive'] === 1) : true;
+// Checkbox state: after a failed submit (old('type') is then set) use the
+// submitted value; otherwise the saved value (edit) or off (create).
+$verifyTls = old('type') !== ''
+    ? (old('verify_tls') === '1')
+    : ($editing ? ((int) ($target['VerifyTls'] ?? 0) === 1) : false);
 
 $action = $editing ? url('/targets/' . $tid) : url('/targets');
 ?>
@@ -40,9 +45,15 @@ $action = $editing ? url('/targets/' . $tid) : url('/targets');
             <input class="form-control<?= invalid_class('label') ?>" type="text" name="label"
                    value="<?= e($label) ?>" placeholder="e.g. Main site">
         </div>
-        <div class="mb-3" data-port-field<?= $type === 'domain' ? ' style="display:none;"' : '' ?>>
+        <div class="mb-3" data-ssl-field<?= $type === 'domain' ? ' style="display:none;"' : '' ?>>
             <label class="form-label">Port <span class="text-faint">(SSL only — default 443)</span></label>
             <input class="form-control mono" type="number" name="port" value="<?= e($port) ?>" min="1" max="65535" style="max-width:140px;">
+        </div>
+        <div class="form-check mb-3" data-ssl-field<?= $type === 'domain' ? ' style="display:none;"' : '' ?>>
+            <input class="form-check-input" type="checkbox" name="verify_tls" value="1" id="verify_tls" <?= $verifyTls ? 'checked' : '' ?>>
+            <label class="form-check-label" for="verify_tls" style="font-size:.92rem;">
+                Strict validation <span class="text-faint">— also fail the check if the certificate is invalid (wrong host, self-signed, or untrusted), not just when it's expiring</span>
+            </label>
         </div>
         <?php if ($editing): ?>
         <div class="form-check mb-3">
