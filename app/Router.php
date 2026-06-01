@@ -49,6 +49,12 @@ class Router
     public function dispatch(): void
     {
         $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+        // Treat HEAD as GET: match the same routes and run the handler, so HEAD
+        // probes (uptime monitors, /health) get the real status code instead of
+        // a 404. The web server drops the body from the HEAD response.
+        if ($method === 'HEAD') {
+            $method = 'GET';
+        }
         $path   = '/' . trim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/', '/');
         if ($path === '/') {
             $path = '/';
