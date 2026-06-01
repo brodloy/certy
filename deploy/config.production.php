@@ -16,6 +16,8 @@ return [
     'timezone' => 'Europe/London',                      // DISPLAY tz; storage stays UTC
     'search_indexable' => false,  // false = noindex (private testing). Set true at public launch.
     'signup_code'      => '',     // set to a shared code to gate sign-ups during testing; '' = open.
+    'demo_enabled'     => true,    // show the "Try the live demo" button + enable /demo one-click login
+    'demo_email'       => 'demo@example.com', // the shared demo account (reset nightly by `console demo:reset`)
 
     // Monitoring
     'scan_interval_minutes' => 720,  // 12h; the systemd timer fires hourly but --due throttles

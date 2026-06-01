@@ -45,6 +45,17 @@ class AuthController
         return redirect('/');
     }
 
+    /** POST /demo — log into the shared, pre-seeded demo account (no signup). */
+    public function demoLogin(): string
+    {
+        if (!config('demo_enabled', true)) {
+            abort(404, 'Not found.');
+        }
+        auth()->login((new DemoService())->ensure());
+        return redirect_with('/dashboard', 'success',
+            "Welcome to the certy demo — it's fully functional, and resets nightly.");
+    }
+
     // ---- Register ---------------------------------------------------------
 
     public function showRegister(): string

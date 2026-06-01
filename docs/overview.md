@@ -32,6 +32,12 @@ namespaces, no framework). See `architecture.md`.
 - Email/password auth (argon2id, rate-limited, remember-me, email verification,
   password reset) — inherited from the starter.
 - Optional **Google and GitHub** sign-in (off by default; enable in `config.php`).
+- **One-click demo**: a "Try the live demo" button (landing + login pages) logs
+  visitors straight into a shared, pre-seeded account — no signup. It's stocked
+  with a varied set (healthy / expired / failed-strict SSL + domain targets) so
+  the dashboard shows the colour-coding off. The account is verified, its settings
+  are locked, and `console demo:reset` (run nightly) restores it to a clean state.
+  Toggle with `demo_enabled`; identified by `demo_email`.
 - **Targets**: add / edit / delete, per-user, capped at 10. Active/paused toggle.
   Managed directly from the dashboard (no separate list page).
 - **Scanning**: on-demand "Scan" (one target) and "Scan all" — live, no reload.

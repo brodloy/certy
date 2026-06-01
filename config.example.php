@@ -12,6 +12,8 @@ return [
     'timezone' => 'UTC',       // how dates are DISPLAYED (stored in UTC always). e.g. 'Europe/London'
     'search_indexable' => false, // false = noindex (pre-launch/testing). Set true at public launch.
     'signup_code'      => '',    // if set, the register form requires this code (private-beta gate). '' = open.
+    'demo_enabled'     => true,  // show the "Try the live demo" button + enable /demo one-click login
+    'demo_email'       => 'demo@example.com', // identifies the shared demo account (reset by `console demo:reset`)
 
     // Monitoring
     'scan_interval_minutes' => 720, // `monitor:run --due` skips targets checked within this window (minutes; 720 = 12h)

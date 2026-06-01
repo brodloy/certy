@@ -29,6 +29,9 @@ class SettingsController
     public function updateProfile(): string
     {
         require_login();
+        if (is_demo_user()) {
+            return redirect_with('/settings', 'error', 'The demo account is shared, so its settings are locked.');
+        }
         $user  = current_user();
         $name  = input('name');
         $email = input('email');
@@ -55,6 +58,9 @@ class SettingsController
     public function updatePassword(): string
     {
         require_login();
+        if (is_demo_user()) {
+            return redirect_with('/settings', 'error', 'The demo account is shared, so its settings are locked.');
+        }
         $user    = current_user();
         $current = input('current_password');
         $new     = input('new_password');
@@ -83,6 +89,9 @@ class SettingsController
     public function disconnect(): string
     {
         require_login();
+        if (is_demo_user()) {
+            return redirect_with('/settings', 'error', 'The demo account is shared, so its settings are locked.');
+        }
         $user     = current_user();
         $provider = input('provider') === 'github' ? 'github' : 'google';
 
@@ -98,6 +107,9 @@ class SettingsController
     public function deleteAccount(): string
     {
         require_login();
+        if (is_demo_user()) {
+            return redirect_with('/settings', 'error', 'The demo account is shared, so it can\'t be deleted.');
+        }
         $user = current_user();
         $uid  = (int) $user['PK_UserID'];
 

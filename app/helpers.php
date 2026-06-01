@@ -328,6 +328,13 @@ function is_verified(): bool
     return !empty(current_user()['VerifiedAt']);
 }
 
+/** True if the current user is the shared demo account (settings locked; resets nightly). */
+function is_demo_user(): bool
+{
+    return current_user() !== null
+        && current_user()['Email'] === config('demo_email', 'demo@example.com');
+}
+
 // ---- Pagination -----------------------------------------------------------
 
 /**

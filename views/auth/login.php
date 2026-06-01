@@ -23,6 +23,14 @@
             <button class="btn btn-primary w-100" type="submit">Sign in</button>
         </form>
 
+        <?php if (config('demo_enabled', true)): ?>
+            <div class="divider">or</div>
+            <form method="post" action="<?= e(url('/demo')) ?>">
+                <?= csrf_field() ?>
+                <button class="btn btn-outline-secondary w-100" type="submit">Explore the live demo</button>
+            </form>
+        <?php endif; ?>
+
         <?php if (config('google_enabled') || config('github_enabled')): ?>
             <div class="divider">or</div>
             <?php if (config('google_enabled')): ?>

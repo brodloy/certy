@@ -26,6 +26,7 @@ try {
         'db:install' => install(in_array('--fresh', $flags, true)),
         'db:seed'    => seed(),
         'db:cleanup' => cleanup(),
+        'demo:reset' => demoReset(),
         'monitor:run'     => monitorRun($flags),
         'monitor:enqueue' => monitorEnqueue($flags),
         'monitor:work'    => monitorWork($flags),
@@ -100,6 +101,13 @@ function cleanup(): void
     db()->run('DELETE FROM `LoginAttempt` WHERE `CreatedAt` < ?', [$old]);
     db()->run("DELETE FROM `ScanJob` WHERE `Status` = 'failed' AND `CreatedAt` < ?", [$old]);
     echo "Cleaned up expired tokens, old login attempts, and dead scan jobs." . PHP_EOL;
+}
+
+/** demo:reset — restore the shared demo account to its canonical targets + rescan. */
+function demoReset(): void
+{
+    (new DemoService())->reset();
+    echo "Demo account reset to its canonical targets." . PHP_EOL;
 }
 
 function monitorRun(array $flags = []): void
@@ -341,6 +349,7 @@ function help(): void
       db:install --fresh  DROP all tables, then migrate + seed (DEV ONLY)
       db:seed             load demo data
       db:cleanup          prune expired tokens + old login attempts (good for cron)
+      demo:reset          restore the shared demo account to its canonical targets (good for cron)
       monitor:run         run checks now on ALL active targets (manual/full run)
       monitor:run --due   check only targets due per scan_interval_minutes (good for cron)
 

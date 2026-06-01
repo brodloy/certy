@@ -180,5 +180,21 @@ un-updated `config.php` is already private):
   launch. *(Note: this gates the email/password form; OAuth sign-up, if you ever
   enable Google/GitHub, would bypass it.)*
 
+## Demo account (one-click "Try the live demo")
+The landing + login pages show a **Try the live demo** button that logs visitors
+straight into a shared, pre-seeded account (no signup). Set it up on the box:
+1. `demo_enabled => true` (the default) in `config.php`; `demo_email` names it.
+2. **Seed it once:** `php console demo:reset` — creates the account, stocks it
+   with the canonical demo targets, and scans them.
+3. **Keep it fresh** with a nightly reset (so a visitor can't leave it messy).
+   As the `deploy` user (it uses the app's DB creds, not root):
+   ```bash
+   ( crontab -l 2>/dev/null | grep -v 'demo:reset'; \
+     echo "30 3 * * * cd /var/www/certy && /usr/bin/php console demo:reset >/dev/null 2>&1" ) | crontab -
+   ```
+The demo account is created **verified with a random password** (only the button
+can log in — the `/login` form can't), and `is_demo_user()` **locks its settings**
+(no profile/password/delete). If you ever enable OAuth sign-up, gate it too.
+
 ## Updating the server stack / adding more projects
 Both are **host-level** concerns — see the infrastructure runbook, not this doc.

@@ -6,7 +6,13 @@
         <h1 class="reveal">Stop getting <span class="accent">surprised</span> by expired certificates.</h1>
         <p class="lead reveal d1">certy monitors your SSL certificates and domains, and warns you in time.</p>
         <div class="hero-cta reveal d2">
-            <a class="btn btn-primary" href="<?= e(url('/register')) ?>">Start monitoring &mdash; free</a>
+            <?php if (config('demo_enabled', true)): ?>
+            <form method="post" action="<?= e(url('/demo')) ?>" class="d-inline m-0">
+                <?= csrf_field() ?>
+                <button class="btn btn-primary" type="submit">Try the live demo</button>
+            </form>
+            <?php endif; ?>
+            <a class="btn btn-outline-secondary" href="<?= e(url('/register')) ?>">Create an account</a>
         </div>
         <a class="hero-secondary reveal d2" href="#how">See how it works &rarr;</a>
     </div>
@@ -167,9 +173,15 @@
 <section class="section" style="padding-top:0;">
     <div class="container">
         <div class="cta-band">
-            <h2>Start watching your certificates in two minutes.</h2>
-            <p>Add your first ten hosts and domains, and let certy carry the deadline for you.</p>
-            <a class="btn btn-light" href="<?= e(url('/register')) ?>">Create your free account</a>
+            <h2>See it working in one click.</h2>
+            <p>Jump into a live, pre-loaded demo &mdash; or create your own account to watch your hosts.</p>
+            <?php if (config('demo_enabled', true)): ?>
+            <form method="post" action="<?= e(url('/demo')) ?>" class="d-inline m-0">
+                <?= csrf_field() ?>
+                <button class="btn btn-light" type="submit">Try the live demo</button>
+            </form>
+            <?php endif; ?>
+            <a class="btn btn-outline-light" href="<?= e(url('/register')) ?>" style="margin-left:.5rem;">Create an account</a>
         </div>
     </div>
 </section>

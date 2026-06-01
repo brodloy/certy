@@ -58,6 +58,7 @@
 
             <div class="app-content">
                 <?php include BASE_PATH . '/views/partials/verify-banner.php'; ?>
+                <?php include BASE_PATH . '/views/partials/demo-banner.php'; ?>
                 <?php include BASE_PATH . '/views/partials/flash.php'; ?>
                 <?= $content ?>
             </div>
