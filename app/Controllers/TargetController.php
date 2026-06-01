@@ -227,7 +227,8 @@ class TargetController
 
         // No retry here: this is the interactive "Scan"/"Scan all" button, so we
         // favour a fast response over flap-smoothing (it never alerts anyway).
-        (new MonitorService())->runChecks($ids, false);
+        // Tagged 'manual' so the admin overview can tell user scans from scheduled.
+        (new MonitorService())->runChecks($ids, false, 'manual');
 
         // Return the refreshed snapshot rows so the page can update in place.
         $holders = implode(', ', array_fill(0, count($ids), '?'));

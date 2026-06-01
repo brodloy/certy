@@ -61,19 +61,94 @@ class AdminController
         $lastFull   = db()->first("SELECT * FROM `MonitorRun` WHERE `Mode` = 'full' ORDER BY `PK_MonitorRunID` DESC LIMIT 1");
         $recentRuns = db()->all("SELECT * FROM `MonitorRun` ORDER BY `PK_MonitorRunID` DESC LIMIT 10");
 
+        // --- Operational health -------------------------------------------
+        // The systemd timer runs `monitor:run --due` hourly, so a scheduled run
+        // row should appear ~hourly. A much older newest run => scheduler down.
+        $staleAfterMin = 90;
+        $minsAgo = $lastDue === null
+            ? null
+            : max(0, (int) floor((time() - strtotime((string) $lastDue['StartedAt'])) / 60));
+        $scheduler = [
+            'lastAt'        => $lastDue['StartedAt'] ?? null,
+            'minsAgo'       => $minsAgo,
+            'healthy'       => $minsAgo !== null && $minsAgo <= $staleAfterMin,
+            'staleAfterMin' => $staleAfterMin,
+        ];
+
+        // Scheduled-run totals over the last 7 days (for a pass-rate read).
+        $run7 = db()->first(
+            "SELECT COUNT(*) AS runs, COALESCE(SUM(`CheckedCount`), 0) AS checked,
+                    COALESCE(SUM(`OkCount`), 0) AS ok, COALESCE(SUM(`FailedCount`), 0) AS failed
+               FROM `MonitorRun` WHERE `StartedAt` >= ?", [$cutoff7],
+        );
+
+        // Targets whose last check errored (failing right now).
+        $failingNow = (int) (db()->first(
+            "SELECT COUNT(*) AS c FROM `MonitoredTarget` WHERE `LastIsOk` = 0")['c'] ?? 0);
+
+        // Worker-queue depth (only meaningful if the scale-out queue is used).
+        $queue = db()->first(
+            "SELECT COALESCE(SUM(`Status` = 'pending'), 0) AS pending,
+                    COALESCE(SUM(`Status` = 'running'), 0) AS running,
+                    COALESCE(SUM(`Status` = 'failed'),  0) AS failed
+               FROM `ScanJob`",
+        );
+
+        // Scan activity split by source (scheduled vs user-triggered).
+        $activity = [
+            '24h' => $this->scanActivity(gmdate('Y-m-d H:i:s', time() - 86400)),
+            '7d'  => $this->scanActivity($cutoff7),
+        ];
+
+        // Most recent failures — the "what's broken right now" list.
+        $recentFailures = db()->all(
+            "SELECT cr.`CheckedAt`, cr.`Source`, cr.`ErrorText`, cr.`FK_MonitorRunID`,
+                    t.`Host`, t.`Label`
+               FROM `CheckResult` cr
+               JOIN `MonitoredTarget` t ON t.`PK_MonitoredTargetID` = cr.`FK_MonitoredTargetID`
+              WHERE cr.`IsOk` = 0
+              ORDER BY cr.`CheckedAt` DESC, cr.`PK_CheckResultID` DESC LIMIT 12",
+        );
+
         return view('admin/index', [
-            'title'      => 'Admin',
-            'users'      => $users,
-            'newUsers7'  => $newUsers7,
-            'targets'    => $targets,
-            'byType'     => $byType,
-            'health'     => $health,
-            'checks'     => $checks,
-            'runStats'   => $runStats,
-            'lastDue'    => $lastDue,
-            'lastFull'   => $lastFull,
-            'recentRuns' => $recentRuns,
+            'title'          => 'Admin',
+            'users'          => $users,
+            'newUsers7'      => $newUsers7,
+            'targets'        => $targets,
+            'byType'         => $byType,
+            'health'         => $health,
+            'checks'         => $checks,
+            'runStats'       => $runStats,
+            'lastDue'        => $lastDue,
+            'lastFull'       => $lastFull,
+            'recentRuns'     => $recentRuns,
+            'scheduler'      => $scheduler,
+            'run7'           => $run7,
+            'failingNow'     => $failingNow,
+            'queue'          => $queue,
+            'activity'       => $activity,
+            'recentFailures' => $recentFailures,
         ], 'app');
+    }
+
+    /** Per-source scan tallies since $cutoff: ['scheduled'=>[total,ok,failed], 'manual'=>…]. */
+    private function scanActivity(string $cutoff): array
+    {
+        $out = [
+            'scheduled' => ['total' => 0, 'ok' => 0, 'failed' => 0],
+            'manual'    => ['total' => 0, 'ok' => 0, 'failed' => 0],
+        ];
+        $rows = db()->all(
+            "SELECT `Source`, COUNT(*) AS total,
+                    COALESCE(SUM(`IsOk` = 1), 0) AS ok, COALESCE(SUM(`IsOk` = 0), 0) AS failed
+               FROM `CheckResult` WHERE `CheckedAt` >= ? GROUP BY `Source`",
+            [$cutoff],
+        );
+        foreach ($rows as $r) {
+            $src = $r['Source'] === 'manual' ? 'manual' : 'scheduled';
+            $out[$src] = ['total' => (int) $r['total'], 'ok' => (int) $r['ok'], 'failed' => (int) $r['failed']];
+        }
+        return $out;
     }
 
     /** GET /admin/export — the MonitorRun log as CSV. */
@@ -91,6 +166,37 @@ class AdminController
                 $r['CheckedCount'], $r['OkCount'], $r['FailedCount'], $r['DurationMs'],
             ], $rows),
         );
+    }
+
+    /** GET /admin/runs — the full scheduled-run log, paginated. */
+    public function runs(): string
+    {
+        require_admin();
+        $page   = max(1, (int) input('page', '1'));
+        $result = db()->paginate('MonitorRun', '', [], $page, 25, 'ORDER BY `PK_MonitorRunID` DESC');
+
+        return view('admin/runs', ['title' => 'Scan runs', 'result' => $result], 'app');
+    }
+
+    /** GET /admin/runs/{id} — one run plus exactly the checks it produced. */
+    public function runDetail(string $id): string
+    {
+        require_admin();
+        $run = db()->first('SELECT * FROM `MonitorRun` WHERE `PK_MonitorRunID` = ?', [(int) $id]);
+        if ($run === null) {
+            abort(404, 'Run not found.');
+        }
+
+        $checks = db()->all(
+            "SELECT cr.*, t.`Host`, t.`Label`
+               FROM `CheckResult` cr
+               JOIN `MonitoredTarget` t ON t.`PK_MonitoredTargetID` = cr.`FK_MonitoredTargetID`
+              WHERE cr.`FK_MonitorRunID` = ?
+              ORDER BY cr.`IsOk` ASC, t.`Host`",
+            [(int) $id],
+        );
+
+        return view('admin/run', ['title' => 'Run #' . (int) $id, 'run' => $run, 'checks' => $checks], 'app');
     }
 
     public function users(): string

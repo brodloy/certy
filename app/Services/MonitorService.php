@@ -35,9 +35,13 @@ class MonitorService
      *                               scheduled run uses this so a transient blip can't
      *                               fire a false failure alert; the interactive
      *                               dashboard scan passes false to stay snappy.
+     * @param string     $source     'scheduled' (cron) | 'manual' (dashboard) — stored
+     *                               on each CheckResult so the admin overview can split them.
+     * @param int|null   $runId      the MonitorRun this belongs to (scheduled runs link
+     *                               their checks for per-run drill-down); null otherwise.
      * @return array<int, array>     list of result-shaped arrays (with 'target_id').
      */
-    public function runChecks(?array $targetIds = null, bool $retry = true): array
+    public function runChecks(?array $targetIds = null, bool $retry = true, string $source = 'scheduled', ?int $runId = null): array
     {
         $targets = $this->loadTargets($targetIds);
         $results = [];
@@ -46,7 +50,7 @@ class MonitorService
             $result = $retry ? $this->checkWithRetry($t) : $this->runOne($t);
             $result['target_id'] = (int) $t['PK_MonitoredTargetID'];
 
-            $this->persist((int) $t['PK_MonitoredTargetID'], $result);
+            $this->persist((int) $t['PK_MonitoredTargetID'], $result, $source, $runId);
             $results[] = $result;
         }
 
@@ -109,7 +113,7 @@ class MonitorService
     }
 
     /** Write one history row AND refresh the denormalised snapshot on the target. */
-    private function persist(int $targetId, array $r): void
+    private function persist(int $targetId, array $r, string $source = 'scheduled', ?int $runId = null): void
     {
         $now      = gmdate('Y-m-d H:i:s');
         $isOk     = $r['ok'] ? 1 : 0;
@@ -119,6 +123,8 @@ class MonitorService
         db()->insert('CheckResult', [
             'FK_MonitoredTargetID' => $targetId,
             'IsOk'                 => $isOk,
+            'Source'               => $source,
+            'FK_MonitorRunID'      => $runId,
             'ExpiresAt'            => $expires,
             'DaysLeft'             => $daysLeft,
             'Issuer'               => $r['issuer']  ?? null,

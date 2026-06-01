@@ -61,11 +61,15 @@ namespaces, no framework). See `architecture.md`.
   persisted per browser (signed-in app only).
 - **Settings**: profile, password (incl. set-password for OAuth-only users),
   connected accounts (link/unlink Google/GitHub), delete account.
-- **Admin** (admin role only): a system-wide overview at `/admin` — user/target
-  totals, system health tally, and scanner activity (last scheduled + manual
-  `monitor:run`, recent run history) — plus the user list at `/admin/users`,
-  where admins can **enable/disable** accounts (a disabled user is refused at
-  login and bounced mid-session). Admins land here instead of the user dashboard.
+- **Admin** (admin role only): an operational overview at `/admin` — a **system
+  status** read (scheduler freshness, 7-day check pass rate, targets failing now,
+  queue depth), **scan activity** split by source (scheduled vs user-triggered,
+  24h/7d), recent runs + a **recent-failures** list, and user/target totals. A
+  full paginated **run log** at `/admin/runs` with **per-run drill-down**
+  (`/admin/runs/{id}` shows exactly which targets a run checked and each result).
+  Plus the user list at `/admin/users`, where admins can **enable/disable**
+  accounts (a disabled user is refused at login and bounced mid-session). Admins
+  land here instead of the user dashboard.
 
 - **Data export (CSV)**: the dashboard exports all your targets + current status;
   a target's detail page exports its full check history; the admin page exports

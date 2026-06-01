@@ -73,14 +73,17 @@ Keys: `UNIQUE(FK_UserID, Host, FK_TargetTypeID)` (no dupes per user); index on
 | `PK_CheckResultID` | INT UNSIGNED PK AI | |
 | `FK_MonitoredTargetID` | INT UNSIGNED | → `MonitoredTarget`, cascade |
 | `IsOk` | TINYINT(1) | did the check itself succeed |
+| `Source` | VARCHAR(16) DEFAULT 'scheduled' | `scheduled` (cron) or `manual` (dashboard "Scan") — lets the admin overview split user scans from scheduled ones |
+| `FK_MonitorRunID` | INT UNSIGNED NULL | → `MonitorRun`, **ON DELETE SET NULL**. The scheduled run that produced this check (null for manual scans + queue-worker checks). Powers the admin per-run drill-down. |
 | `ExpiresAt` / `DaysLeft` | (nullable) | null on failure |
 | `Issuer` / `Subject` | VARCHAR(255) NULL | SSL only |
 | `ErrorText` | VARCHAR(500) NULL | populated on failure |
 | `CheckedAt` | DATETIME | UTC |
 
-Index `(FK_MonitoredTargetID, CheckedAt)` serves both "latest per target" and the
-history timeline. **No stored status** — urgency is derived at render time (see
-`monitor_status()` in `conventions`), so it can never go stale.
+Indexes: `(FK_MonitoredTargetID, CheckedAt)` (latest-per-target + history),
+`(CheckedAt)` (admin activity windows), `(FK_MonitorRunID)` (per-run drill-down).
+**No stored status** — urgency is derived at render time (see `monitor_status()`
+in `conventions`), so it can never go stale.
 
 ### `AlertLog` — dedup ledger for sent alerts
 
@@ -103,9 +106,11 @@ snapshot; they're deduped by the ok→failed transition, not this table.
 ### `MonitorRun` — one row per scheduled/CLI scan run
 
 Operational log so you can confirm the scheduler is firing and see what each run
-did. Written only by `console monitor:run` (see `scheduling.md`); read by the
-**admin dashboard** (`/admin`) for the last scheduled/manual run + recent history.
-Not tied to a target — no foreign key, pure append-only.
+did. Written by `console monitor:run`, which now **creates the row up front**
+(counts zeroed) so each `CheckResult` it writes can link back via
+`FK_MonitorRunID`, then backfills the tallies when the run finishes. Read by the
+**admin area**: `/admin` (health + recent runs), `/admin/runs` (full paginated
+log), and `/admin/runs/{id}` (one run + exactly the checks it produced).
 
 | Column | Type | Notes |
 |---|---|---|

@@ -124,6 +124,7 @@ function monitorRun(array $flags = []): void
     $due      = in_array('--due', $flags, true);
     $mode     = $due ? 'due' : 'full';
     $dueCount = null; // stays null for a full run (no "due" selection happened)
+    $ids      = null; // null = every active target (full mode)
 
     if ($due) {
         $intervalMin = max(1, (int) config('scan_interval_minutes', 720));
@@ -140,16 +141,29 @@ function monitorRun(array $flags = []): void
         );
         $ids      = array_map(static fn(array $r): int => (int) $r['PK_MonitoredTargetID'], $rows);
         $dueCount = count($ids);
+    }
 
-        if ($ids === []) {
-            echo "Due run (interval {$intervalMin}m): nothing due — all active targets are fresh." . PHP_EOL;
-            $results = [];
-        } else {
-            echo "Due run (interval {$intervalMin}m): {$dueCount} target(s) due." . PHP_EOL;
-            $results = (new MonitorService())->runChecks($ids);
-        }
+    // Create the run row UP FRONT (counts zeroed) so every check this run writes
+    // can link to it via CheckResult.FK_MonitorRunID — that's what powers the
+    // admin per-run drill-down. We fill in the tallies once the run finishes.
+    $runId = db()->insert('MonitorRun', [
+        'StartedAt'    => $startedAt,
+        'Mode'         => $mode,
+        'DueCount'     => $dueCount,
+        'CheckedCount' => 0,
+        'OkCount'      => 0,
+        'FailedCount'  => 0,
+        'DurationMs'   => 0,
+    ]);
+
+    if ($due && $ids === []) {
+        echo "Due run (interval {$intervalMin}m): nothing due — all active targets are fresh." . PHP_EOL;
+        $results = [];
     } else {
-        $results = (new MonitorService())->runChecks();
+        if ($due) {
+            echo "Due run (interval {$intervalMin}m): {$dueCount} target(s) due." . PHP_EOL;
+        }
+        $results = (new MonitorService())->runChecks($ids, true, 'scheduled', $runId);
     }
 
     $total = count($results);
@@ -167,15 +181,12 @@ function monitorRun(array $flags = []): void
         ? (new AlertDispatcher())->dispatch($results)
         : 0;
 
-    db()->insert('MonitorRun', [
-        'StartedAt'    => $startedAt,
-        'Mode'         => $mode,
-        'DueCount'     => $dueCount,
-        'CheckedCount' => $total,
-        'OkCount'      => $ok,
-        'FailedCount'  => $failed,
-        'DurationMs'   => (int) round((microtime(true) - $t0) * 1000),
-    ]);
+    // Backfill the run row's final tallies.
+    db()->run(
+        'UPDATE `MonitorRun` SET `CheckedCount` = ?, `OkCount` = ?, `FailedCount` = ?, `DurationMs` = ?
+          WHERE `PK_MonitorRunID` = ?',
+        [$total, $ok, $failed, (int) round((microtime(true) - $t0) * 1000), $runId],
+    );
 
     $alertNote = $alertsSent > 0 ? " Sent {$alertsSent} alert(s)." : '';
     echo "Checked {$total} target(s): {$ok} ok, {$failed} failed.{$alertNote}" . PHP_EOL;

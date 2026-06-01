@@ -68,4 +68,6 @@ $router->post('/settings/delete',     [SettingsController::class, 'deleteAccount
 $router->get('/admin',                   [AdminController::class, 'index']);
 $router->get('/admin/export',            [AdminController::class, 'exportRuns']);
 $router->get('/admin/users',             [AdminController::class, 'users']);
+$router->get('/admin/runs',              [AdminController::class, 'runs']);
+$router->get('/admin/runs/{id}',         [AdminController::class, 'runDetail']);
 $router->post('/admin/users/{id}/toggle', [AdminController::class, 'toggleActive']);
