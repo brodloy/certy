@@ -12,6 +12,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?php /* Keep the site out of search engines until launch (search_indexable => true). */ ?>
+    <?php if (!config('search_indexable', false)): ?><meta name="robots" content="noindex, nofollow"><?php endif; ?>
     <title><?= e($title ?? config('app_name')) ?></title>
     <link rel="icon" type="image/svg+xml" href="<?= e(url('assets/img/favicon.svg')) ?>">
     <link rel="icon" type="image/png" sizes="32x32" href="<?= e(url('assets/img/favicon-32.png')) ?>">

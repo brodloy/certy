@@ -14,6 +14,7 @@ return [
     'app_url'  => 'https://certy.bradleyboothman.dev', // your real subdomain, https
     'debug'    => false,                               // MUST be false in production
     'timezone' => 'Europe/London',                      // DISPLAY tz; storage stays UTC
+    'search_indexable' => false,  // false = noindex (private testing). Set true at public launch.
 
     // Monitoring
     'scan_interval_minutes' => 720,  // 12h; the systemd timer fires hourly but --due throttles

@@ -11,6 +11,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?php if (!config('search_indexable', false)): ?><meta name="robots" content="noindex, nofollow"><?php endif; ?>
     <?php /* No explicit choice yet? Honour the OS preference before first paint. */ ?>
     <script>
         (function () {

@@ -10,6 +10,7 @@ return [
     'app_url'  => 'http://localhost:8000',
     'debug'    => true,        // true locally (show errors). Set FALSE in production.
     'timezone' => 'UTC',       // how dates are DISPLAYED (stored in UTC always). e.g. 'Europe/London'
+    'search_indexable' => false, // false = noindex (pre-launch/testing). Set true at public launch.
 
     // Monitoring
     'scan_interval_minutes' => 720, // `monitor:run --due` skips targets checked within this window (minutes; 720 = 12h)
