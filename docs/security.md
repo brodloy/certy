@@ -94,6 +94,14 @@ and 404 on a miss. No exceptions.
 - **All SQL uses bound parameters** via `db()` — never string-concatenate user
   input into SQL.
 - Host input is cleaned/validated (`clean_host()`, `looksLikeHost`) before storage.
+- **SSRF guard (outbound scans):** the SSL checker makes a connection to a
+  user-supplied host, so it resolves the host and **refuses any private/reserved
+  IP** (loopback, RFC1918, `169.254/16` cloud-metadata, etc.) via
+  `FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE`, then connects to the
+  *pinned* public IP (SNI/verification still target the hostname) so DNS rebinding
+  can't swap in an internal address. The WHOIS checker only connects to
+  TLD-derived WHOIS servers, never the user's host. **Rule:** any new feature that
+  opens an outbound connection to user-influenced input must apply the same guard.
 
 ## 8. Registration gate (private beta)
 

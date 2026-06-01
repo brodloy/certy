@@ -78,21 +78,32 @@ class CertificateChecker
     /**
      * Open a TLS socket to the host. Returns [resource|false, errstr].
      * With $verify the chain + hostname are enforced; without, any cert is taken.
+     *
+     * SSRF guard: we resolve the host first and refuse any private/reserved
+     * address (cloud metadata, loopback, internal LAN), then connect to the
+     * *resolved IP* — pinning it — with SNI/verification still aimed at the
+     * hostname. Pinning the validated IP means DNS rebinding can't swap in an
+     * internal address between the check and the connect.
      */
     private function connect(string $host, int $port, int $timeout, bool $verify): array
     {
+        $ip = $this->resolvePublicIp($host);
+        if ($ip === null) {
+            return [false, 'host did not resolve to a public address'];
+        }
+
         $context = stream_context_create(['ssl' => [
             'capture_peer_cert' => true,
             'verify_peer'       => $verify,
             'verify_peer_name'  => $verify,
-            'peer_name'         => $host,  // hostname to match against in strict mode
+            'peer_name'         => $host,  // SNI + (strict) hostname check target the hostname
             'SNI_enabled'       => true,   // required for hosts serving several certs
         ]]);
 
         $errno  = 0;
         $errstr = '';
         $client = @stream_socket_client(
-            "ssl://{$host}:{$port}",
+            "ssl://{$ip}:{$port}",
             $errno,
             $errstr,
             $timeout,
@@ -101,6 +112,22 @@ class CertificateChecker
         );
 
         return [$client, $errstr];
+    }
+
+    /**
+     * The first PUBLIC IPv4 the host resolves to, or null if it doesn't resolve
+     * or only resolves to private/reserved space (10/8, 127/8, 169.254/16 —
+     * cloud metadata —, 192.168/16, etc.). IPv4-only by design (keeps it simple;
+     * an IPv6-only host reads as unreachable).
+     */
+    private function resolvePublicIp(string $host): ?string
+    {
+        foreach (@gethostbynamel($host) ?: [] as $ip) {
+            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                return $ip;
+            }
+        }
+        return null;
     }
 
     private function fail(string $host, string $error): array
