@@ -51,6 +51,9 @@ class AuthController
         if (!config('demo_enabled', true)) {
             abort(404, 'Not found.');
         }
+        if (!rate_limit('demo_login', 10, 60)) {
+            return redirect_with('/login', 'error', 'Too many demo sign-ins from your network — please wait a moment.');
+        }
         auth()->login((new DemoService())->ensure());
         return redirect_with('/dashboard', 'success',
             "Welcome to the certy demo — it's fully functional, and resets nightly.");
@@ -62,6 +65,9 @@ class AuthController
         require_login();
         if (!is_demo_user()) {
             return redirect('/dashboard');
+        }
+        if (!rate_limit('demo_reset', 4, 60)) {
+            return redirect_with('/dashboard', 'error', 'Please wait a moment before resetting the demo again.');
         }
         (new DemoService())->reset();
         return redirect_with('/dashboard', 'success', 'Demo restored to its starting state.');
@@ -76,6 +82,10 @@ class AuthController
 
     public function register(): string
     {
+        if (!rate_limit('register', 10, 600)) {
+            return redirect_with('/register', 'error', 'Too many attempts — please wait a few minutes.');
+        }
+
         $name     = input('name');
         $email    = input('email');
         $password = input('password');

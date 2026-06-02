@@ -220,6 +220,12 @@ class TargetController
     {
         require_login();
 
+        // Each scan opens outbound connections, so cap how fast they can fire
+        // (per IP) — generous for a real person, useless for a script.
+        if (!rate_limit('scan', 15, 60)) {
+            return json(['ok' => false, 'error' => 'Too many checks — please wait a moment.'], 429);
+        }
+
         $ids = $this->ownedIdsFromRequest();
         if ($ids === []) {
             return json(['ok' => false, 'error' => 'No matching targets.'], 404);

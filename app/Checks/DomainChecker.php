@@ -144,9 +144,17 @@ class DomainChecker
     /** Open a port-43 socket, send "<query>\r\n", read the whole text reply. */
     private function query(string $server, string $query, int $timeout): ?string
     {
+        // SSRF guard: the WHOIS server comes from a TLD map / IANA / a registry
+        // referral hop — resolve it to a public IP and connect to that pinned IP
+        // so a malicious referral can't point us at an internal address.
+        $ip = resolve_public_ip($server);
+        if ($ip === null) {
+            return null;
+        }
+
         $errno  = 0;
         $errstr = '';
-        $fp = @fsockopen($server, 43, $errno, $errstr, $timeout);
+        $fp = @fsockopen($ip, 43, $errno, $errstr, $timeout);
         if ($fp === false) {
             return null;
         }

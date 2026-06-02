@@ -131,12 +131,32 @@ function csv_download(string $filename, array $columns, iterable $rows): never
     header('Content-Type: text/csv; charset=UTF-8');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
     $out = fopen('php://output', 'w');
-    fputcsv($out, $columns);
+    fputcsv($out, array_map('csv_safe_cell', $columns));
     foreach ($rows as $row) {
-        fputcsv($out, $row);
+        fputcsv($out, array_map('csv_safe_cell', $row));
     }
     fclose($out);
     exit;
+}
+
+/**
+ * Neutralise CSV/spreadsheet formula injection. A cell beginning with =, @, or a
+ * control char (or with +/- when it's NOT a plain number) is treated as a formula
+ * by Excel/Sheets — and our exports carry attacker-influenced fields (cert issuer/
+ * subject, error text). Prefixing a single quote makes the cell inert as text.
+ */
+function csv_safe_cell(mixed $value): string
+{
+    $s = (string) $value;
+    if ($s === '') {
+        return $s;
+    }
+    $first = $s[0];
+    if (in_array($first, ['=', '@', "\t", "\r"], true)
+        || (in_array($first, ['+', '-'], true) && !is_numeric($s))) {
+        return "'" . $s;
+    }
+    return $s;
 }
 
 /** Stop with an HTTP error and a small page (or JSON for /api paths). */
@@ -192,6 +212,33 @@ function input(string $key, string $default = ''): string
 function client_ip(): string
 {
     return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+}
+
+/**
+ * Simple per-IP rate limit. Returns true if this IP is still UNDER $max hits of
+ * $action in the last $seconds (and records this hit); false if it's over (and
+ * should be rejected). Reuses the `LoginAttempt` table as a generic IP-keyed
+ * event log — `rl:` prefix keeps it distinct from real login attempts, and
+ * `db:cleanup` prunes it. Behind Caddy, REMOTE_ADDR is the real client IP.
+ */
+function rate_limit(string $action, int $max, int $seconds): bool
+{
+    $ip    = client_ip();
+    $since = gmdate('Y-m-d H:i:s', time() - $seconds);
+    $row   = db()->first(
+        'SELECT COUNT(*) AS c FROM `LoginAttempt`
+          WHERE `Identifier` = ? AND `IPAddress` = ? AND `CreatedAt` >= ?',
+        ['rl:' . $action, $ip, $since],
+    );
+    if ((int) ($row['c'] ?? 0) >= $max) {
+        return false;
+    }
+    db()->insert('LoginAttempt', [
+        'Identifier' => 'rl:' . $action,
+        'IPAddress'  => $ip,
+        'CreatedAt'  => gmdate('Y-m-d H:i:s'),
+    ]);
+    return true;
 }
 
 // ---- Flash messages + old input (survive one redirect) --------------------
@@ -676,6 +723,29 @@ function clean_host(string $host): string
     $host = preg_replace('#[/:].*$#', '', (string) $host);
     $host = preg_replace('#^www\.#', '', (string) $host);
     return (string) $host;
+}
+
+/**
+ * SSRF guard for outbound scans: resolve $host and return the first PUBLIC IPv4
+ * it maps to, or null if it doesn't resolve or only points at private/reserved
+ * space (loopback, RFC1918, 169.254 cloud-metadata, CGNAT 100.64/10, etc.).
+ * Callers connect to the returned IP — pinning it — so DNS rebinding can't swap
+ * in an internal address between this check and the connection. IPv4-only by
+ * design (an IPv6-only host reads as unreachable, which is acceptable).
+ */
+function resolve_public_ip(string $host): ?string
+{
+    foreach (@gethostbynamel($host) ?: [] as $ip) {
+        // filter_var rejects RFC1918 + reserved (loopback, link-local/metadata,
+        // 0/8, 240/4). CGNAT 100.64.0.0/10 isn't covered, so block it by hand.
+        $long = ip2long($ip);
+        $cgnat = $long !== false && ($long & 0xFFC00000) === (ip2long('100.64.0.0') & 0xFFC00000);
+        if (!$cgnat
+            && filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+            return $ip;
+        }
+    }
+    return null;
 }
 
 // ---- Favicons -------------------------------------------------------------

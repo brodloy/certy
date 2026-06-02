@@ -87,7 +87,7 @@ class CertificateChecker
      */
     private function connect(string $host, int $port, int $timeout, bool $verify): array
     {
-        $ip = $this->resolvePublicIp($host);
+        $ip = resolve_public_ip($host);
         if ($ip === null) {
             return [false, 'host did not resolve to a public address'];
         }
@@ -112,22 +112,6 @@ class CertificateChecker
         );
 
         return [$client, $errstr];
-    }
-
-    /**
-     * The first PUBLIC IPv4 the host resolves to, or null if it doesn't resolve
-     * or only resolves to private/reserved space (10/8, 127/8, 169.254/16 —
-     * cloud metadata —, 192.168/16, etc.). IPv4-only by design (keeps it simple;
-     * an IPv6-only host reads as unreachable).
-     */
-    private function resolvePublicIp(string $host): ?string
-    {
-        foreach (@gethostbynamel($host) ?: [] as $ip) {
-            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
-                return $ip;
-            }
-        }
-        return null;
     }
 
     private function fail(string $host, string $error): array

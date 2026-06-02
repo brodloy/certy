@@ -12,6 +12,10 @@ require dirname(__DIR__) . '/bootstrap.php';
 header('X-Frame-Options: DENY');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: strict-origin-when-cross-origin');
+// Force HTTPS for a year once seen over TLS (ignored by browsers over plain HTTP).
+if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+    header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+}
 header(
     "Content-Security-Policy: default-src 'self'; "
     . "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "

@@ -80,7 +80,8 @@ and 404 on a miss. No exceptions.
   remember-me tokens are dropped on disable. Admins can't disable themselves.
 - Remember-me uses a hashed token in `RememberToken`, not the password.
 - Response headers (set in `public/index.php`): `X-Frame-Options`, nosniff,
-  a referrer policy, and a CSP whose `img-src` is `'self' data:` only.
+  a referrer policy, a CSP whose `img-src` is `'self' data:` only, and **HSTS**
+  (`Strict-Transport-Security`, 1 year) sent over HTTPS.
 - Target favicons are served same-origin by `FaviconController` (`/favicon`),
   which fetches the icon from Google's S2 service server-side and caches it under
   `storage/cache/`. This keeps the CSP tight, stops privacy blockers from
@@ -94,14 +95,22 @@ and 404 on a miss. No exceptions.
 - **All SQL uses bound parameters** via `db()` — never string-concatenate user
   input into SQL.
 - Host input is cleaned/validated (`clean_host()`, `looksLikeHost`) before storage.
-- **SSRF guard (outbound scans):** the SSL checker makes a connection to a
-  user-supplied host, so it resolves the host and **refuses any private/reserved
-  IP** (loopback, RFC1918, `169.254/16` cloud-metadata, etc.) via
-  `FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE`, then connects to the
-  *pinned* public IP (SNI/verification still target the hostname) so DNS rebinding
-  can't swap in an internal address. The WHOIS checker only connects to
-  TLD-derived WHOIS servers, never the user's host. **Rule:** any new feature that
-  opens an outbound connection to user-influenced input must apply the same guard.
+- **SSRF guard (outbound scans):** both checkers route every outbound connection
+  through `resolve_public_ip()`, which resolves the host and **refuses any
+  private/reserved/CGNAT IP** (loopback, RFC1918, `169.254/16` cloud-metadata,
+  `100.64/10`) via `FILTER_FLAG_NO_PRIV_RANGE | NO_RES_RANGE` plus an explicit
+  CGNAT check, then connects to the **pinned public IP** (the SSL path keeps
+  SNI/verification aimed at the hostname) so DNS rebinding can't swap in an
+  internal address. The WHOIS path guards its server connections the same way,
+  **including registry referral hops**. **Rule:** any new feature that opens an
+  outbound connection to user-influenced input must go through `resolve_public_ip()`.
+- **CSV exports** are sanitised against spreadsheet **formula injection**
+  (`csv_safe_cell()` quotes cells starting with `= @` or a non-numeric `+`/`-`),
+  because exported fields include attacker-influenced cert issuer/subject + error text.
+- **Rate limiting:** login throttling (`Auth::tooManyAttempts`) plus a generic
+  per-IP `rate_limit()` on the expensive/public endpoints — on-demand scans, demo
+  login, demo reset, and registration — to blunt scripted abuse of the scanner and
+  the signup gate. (Reuses the `LoginAttempt` table; `db:cleanup` prunes it.)
 
 ## 8. Registration gate (private beta)
 

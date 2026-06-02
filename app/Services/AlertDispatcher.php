@@ -37,6 +37,9 @@ class AlertDispatcher
             if ($target === null || empty($target['VerifiedAt'])) {
                 continue; // unknown target, or the owner hasn't verified their email
             }
+            if ($target['Email'] === config('demo_email', 'demo@example.com')) {
+                continue; // never email the shared demo account (its address is a placeholder)
+            }
 
             $sent += !empty($r['ok'])
                 ? $this->maybeExpiryAlert($target, $r, $thresholds)
