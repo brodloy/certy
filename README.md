@@ -10,6 +10,33 @@ Built on a deliberately small, **no-dependency PHP 8** base: no Composer, no
 namespaces, no framework. One front controller, a tiny router, plain-PHP views,
 and a thin PDO wrapper. SQL lives right in the controller methods.
 
+## For reviewers — architecture & rationale
+
+**What it is:** a multi-tenant monitor that checks SSL certificates (a raw TLS
+handshake, parsed with OpenSSL) and domain registrations (raw WHOIS on port 43)
+from the outside, then warns owners before either lapses. Live, with a one-click
+demo.
+
+**Why no framework / no Composer:** a deliberate constraint — to build at the level
+a framework usually hides (routing, request lifecycle, auth, CSRF, a query layer)
+and keep the whole thing legible end to end (~5k lines you can read in an
+afternoon). *Trade-off:* more wheels reinvented and no ecosystem to lean on; in
+return, zero dependency/supply-chain risk, no upgrade treadmill, and nothing
+hidden. For a commercial product I'd reach for a framework — this project is
+deliberately about the fundamentals.
+
+**Security model:** multi-tenant isolation is the core invariant — every query is
+scoped by owner and returns 404 on a miss (so there's no IDOR, and "not yours" is
+indistinguishable from "doesn't exist"). CSRF is enforced centrally on every POST;
+passwords are **argon2id**; output is escaped by default; and the scanner has an
+SSRF guard (resolve the host, reject private/reserved IPs, connect to the pinned
+public IP). Full write-up in [docs/security.md](docs/security.md).
+
+**What I'd change at scale:** lift SQL out of controllers into a repository/service
+layer; swap the DB-backed `ScanJob` queue for a real broker (e.g. Redis);
+externalise sessions; cache check results; and run the scanner as a separately
+scalable worker pool (the seam already exists via `monitor:work`).
+
 ## Quick start (MAMP / WAMP / `php -S`)
 
 You need **PHP 8.2+** and **MySQL** — both come with MAMP/WAMP.
